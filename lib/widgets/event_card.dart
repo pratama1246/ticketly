@@ -1,0 +1,221 @@
+import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../data/home_dummy_data.dart';
+
+// ─────────────────────────────────────────────
+// EventCard — Reusable card untuk semua section event
+// Dipakai di: Konser Terbaru, Festival Seru, Event Lainnya
+// Width: 160px (horizontal scroll)
+// ─────────────────────────────────────────────
+
+class EventCard extends StatelessWidget {
+  final EventModel event;
+  final VoidCallback? onTap;
+  final double? width;
+
+  const EventCard({
+    super.key,
+    required this.event,
+    this.onTap,
+    this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: width ?? 160,
+        decoration: BoxDecoration(
+          color: AppColors.cardBg,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: AppShadows.cardShadow,
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Event Image ──
+            _EventCardImage(
+              imageUrl: event.imageUrl,
+              isSoldOut: event.isSoldOut,
+              badge: event.badge,
+            ),
+
+            // ── Event Info ──
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nama event — max 2 baris
+                  Text(
+                    event.title,
+                    style: AppTextStyles.cardTitleStyle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Lokasi
+                  _EventMetaRow(
+                    icon: Icons.location_on_outlined,
+                    text: event.location,
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Waktu
+                  _EventMetaRow(
+                    icon: Icons.access_time_outlined,
+                    text: event.time,
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Tombol Selengkapnya — outlined small
+                  _SelengkapnyaButton(onTap: onTap),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sub-widget: Image area dengan overlay sold out ──
+class _EventCardImage extends StatelessWidget {
+  final String imageUrl;
+  final bool isSoldOut;
+  final String? badge;
+
+  const _EventCardImage({
+    required this.imageUrl,
+    required this.isSoldOut,
+    this.badge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Placeholder image — replace dengan Image.network / Image.asset saat ada real assets
+        Container(
+          height: 100,
+          width: double.infinity,
+          color: const Color(0xFFD1D5DB),
+          child: const Center(
+            child: Icon(Icons.image_outlined, color: Color(0xFF9CA3AF), size: 32),
+          ),
+        ),
+
+        // Sold-out overlay
+        if (isSoldOut)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9CA3AF),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                  ),
+                  child: Text(
+                    'Habis',
+                    style: AppTextStyles.captionStyle.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // Optional badge (e.g. HOT, NEW)
+        if (badge != null && !isSoldOut)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.accentYellow,
+                borderRadius: BorderRadius.circular(AppRadius.badge),
+              ),
+              child: Text(
+                badge!,
+                style: AppTextStyles.captionStyle.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Sub-widget: Row ikon + teks (lokasi/waktu) ──
+class _EventMetaRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _EventMetaRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 12, color: AppColors.textHint),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.captionStyle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Sub-widget: Tombol "Selengkapnya" outlined small ──
+class _SelengkapnyaButton extends StatelessWidget {
+  final VoidCallback? onTap;
+
+  const _SelengkapnyaButton({this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 30,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.bluePrimary, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.button),
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Text(
+          'Selengkapnya',
+          style: AppTextStyles.captionStyle.copyWith(
+            color: AppColors.bluePrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+          ),
+        ),
+      ),
+    );
+  }
+}
