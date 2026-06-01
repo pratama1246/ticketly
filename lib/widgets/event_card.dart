@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../data/home_dummy_data.dart';
+import '../models/event_model.dart';
 
 // ─────────────────────────────────────────────
 // EventCard — Reusable card untuk semua section event
@@ -105,9 +105,27 @@ class _EventCardImage extends StatelessWidget {
           height: 100,
           width: double.infinity,
           color: const Color(0xFFD1D5DB),
-          child: const Center(
-            child: Icon(Icons.image_outlined, color: Color(0xFF9CA3AF), size: 32),
-          ),
+          child: imageUrl.isNotEmpty
+              ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Icon(Icons.broken_image_outlined, color: Color(0xFF9CA3AF), size: 32),
+                  ),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  },
+                )
+              : const Center(
+                  child: Icon(Icons.image_outlined, color: Color(0xFF9CA3AF), size: 32),
+                ),
         ),
 
         // Sold-out overlay
@@ -198,10 +216,12 @@ class _SelengkapnyaButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 30,
-      child: OutlinedButton(
+      child: ElevatedButton(
         onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.bluePrimary, width: 1.5),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.bluePrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.button),
           ),
@@ -210,7 +230,7 @@ class _SelengkapnyaButton extends StatelessWidget {
         child: Text(
           'Selengkapnya',
           style: AppTextStyles.captionStyle.copyWith(
-            color: AppColors.bluePrimary,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 11,
           ),

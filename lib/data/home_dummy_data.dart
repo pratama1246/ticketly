@@ -1,29 +1,9 @@
+import '../models/event_model.dart';
+
 // ─────────────────────────────────────────────
 // TICKETLY — Dummy Data Model
 // Placeholder data untuk home page
 // ─────────────────────────────────────────────
-
-class EventModel {
-  final String id;
-  final String title;
-  final String location;
-  final String date;
-  final String time;
-  final String imageUrl;
-  final String? badge;
-  final bool isSoldOut;
-
-  const EventModel({
-    required this.id,
-    required this.title,
-    required this.location,
-    required this.date,
-    required this.time,
-    required this.imageUrl,
-    this.badge,
-    this.isSoldOut = false,
-  });
-}
 
 class HomeDummyData {
   static const List<EventModel> concertEvents = [

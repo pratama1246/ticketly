@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 import '../data/home_dummy_data.dart';
+import '../models/event_model.dart';
+import '../service/api_service.dart';
+import '../constants/api_constants.dart';
 import '../widgets/hero_banner.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/horizontal_event_section.dart';
@@ -40,21 +43,58 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentNavIndex = 0;
 
-  // Data hero banner (placeholder — ganti dengan real data dari API)
-  final List<HeroBannerItem> _heroBanners = const [
-    HeroBannerItem(
-      imageUrl: 'assets/images/banner_riize.png',
-      eventName: 'RIIZING CUT — RIIZE LOUD IN JAKARTA',
-      category: 'Konser',
-      dateVenue: '5-6 Jan 2026 • ICE BSD Hall 5-6',
-    ),
-    HeroBannerItem(
-      imageUrl: 'assets/images/banner_nct.png',
-      eventName: 'NCT DREAM: THE DREAM SHOW 4 WORLD TOUR',
-      category: 'Konser',
-      dateVenue: '15 Jan 2026 • Jakarta International Stadium',
-    ),
-  ];
+  List<HeroBannerItem> _heroBanners = [];
+  List<EventModel> _concertEvents = [];
+  List<EventModel> _festivalEvents = [];
+  List<EventModel> _otherEvents = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    setState(() => _isLoading = true);
+    try {
+      final results = await Future.wait([
+        ApiService.fetchFeaturedEvents(),
+        ApiService.fetchEventsByCategory('concert'),
+        ApiService.fetchEventsByCategory('festival'),
+        ApiService.fetchEventsByCategory('event'),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _heroBanners = results[0] as List<HeroBannerItem>;
+          _concertEvents = results[1] as List<EventModel>;
+          _festivalEvents = results[2] as List<EventModel>;
+          _otherEvents = results[3] as List<EventModel>;
+          _isLoading = false;
+        });
+
+        if (_heroBanners.isEmpty &&
+            _concertEvents.isEmpty &&
+            _festivalEvents.isEmpty &&
+            _otherEvents.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Gagal terhubung ke API backend (${ApiConstants.baseUrl}). Periksa koneksi server Anda.',
+              ),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,132 +109,147 @@ class _HomePageState extends State<HomePage> {
           children: [
             // ── Content Area ──
             Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  // ── Custom AppBar ──
-                  SliverToBoxAdapter(
-                    child: _HomeAppBar(),
-                  ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.bluePrimary),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadAllData,
+                      color: AppColors.bluePrimary,
+                      child: CustomScrollView(
+                        slivers: [
+                          // ── Custom AppBar ──
+                          SliverToBoxAdapter(
+                            child: _HomeAppBar(),
+                          ),
 
-                  // ── Hero Banner ──
-                  SliverToBoxAdapter(
-                    child: HeroBanner(items: _heroBanners),
-                  ),
+                          // ── Hero Banner ──
+                          if (_heroBanners.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: HeroBanner(items: _heroBanners),
+                            ),
 
-                  // ── Spacing ──
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
+                          // ── Spacing ──
+                          if (_heroBanners.isNotEmpty)
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: AppSpacing.sectionVertical),
+                            ),
 
-                  // ── Tagline + Search ──
-                  SliverToBoxAdapter(
-                    child: _TaglineAndSearch(),
-                  ),
+                          // ── Tagline + Search ──
+                          SliverToBoxAdapter(
+                            child: _TaglineAndSearch(),
+                          ),
 
-                  // ── Section Spacing ──
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
+                          // ── Section Spacing ──
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: AppSpacing.sectionVertical),
+                          ),
 
-                  // ── Konser Terbaru ──
-                  SliverToBoxAdapter(
-                    child: HorizontalEventSection(
-                      title: 'Konser Terbaru',
-                      events: HomeDummyData.concertEvents,
-                      onLihatSemua: () {
-                        // TODO: Navigate to konser list screen
-                      },
-                      onEventTap: (event) {
-                        // TODO: Navigate to event detail
-                      },
+                          // ── Konser Terbaru ──
+                          if (_concertEvents.isNotEmpty) ...[
+                            SliverToBoxAdapter(
+                              child: HorizontalEventSection(
+                                title: 'Konser Terbaru',
+                                events: _concertEvents,
+                                onLihatSemua: () {
+                                  // TODO: Navigate to konser list screen
+                                },
+                                onEventTap: (event) {
+                                  // TODO: Navigate to event detail
+                                },
+                              ),
+                            ),
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: AppSpacing.sectionVertical),
+                            ),
+                          ],
+
+                          // ── Festival Seru ──
+                          if (_festivalEvents.isNotEmpty) ...[
+                            SliverToBoxAdapter(
+                              child: HorizontalEventSection(
+                                title: 'Festival Seru',
+                                events: _festivalEvents,
+                                onLihatSemua: () {
+                                  // TODO: Navigate to festival list screen
+                                },
+                                onEventTap: (event) {
+                                  // TODO: Navigate to event detail
+                                },
+                              ),
+                            ),
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: AppSpacing.sectionVertical),
+                            ),
+                          ],
+
+                          // ── Event Lainnya ──
+                          if (_otherEvents.isNotEmpty) ...[
+                            SliverToBoxAdapter(
+                              child: HorizontalEventSection(
+                                title: 'Event Lainnya',
+                                events: _otherEvents,
+                                onLihatSemua: () {
+                                  // TODO: Navigate to other events screen
+                                },
+                                onEventTap: (event) {
+                                  // TODO: Navigate to event detail
+                                },
+                              ),
+                            ),
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: AppSpacing.sectionVertical),
+                            ),
+                          ],
+
+                          // ── Promo Banner ──
+                          SliverToBoxAdapter(
+                            child: PromoBanner(
+                              onTap: () {
+                                // TODO: Navigate to promo page
+                              },
+                            ),
+                          ),
+
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: AppSpacing.sectionVertical),
+                          ),
+
+                          // ── Cara Beli Tiket ──
+                          const SliverToBoxAdapter(child: CaraBeli()),
+
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: AppSpacing.sectionVertical),
+                          ),
+
+                          // ── FAQ ──
+                          SliverToBoxAdapter(
+                            child: FaqSection(items: HomeDummyData.faqItems),
+                          ),
+
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: AppSpacing.sectionVertical),
+                          ),
+
+                          // ── Newsletter CTA ──
+                          const SliverToBoxAdapter(child: NewsletterCta()),
+
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: AppSpacing.sectionVertical),
+                          ),
+
+                          // ── Trust Section ──
+                          const SliverToBoxAdapter(child: TrustSection()),
+
+                          // ── Bottom padding ──
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 32),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
-
-                  // ── Festival Seru ──
-                  SliverToBoxAdapter(
-                    child: HorizontalEventSection(
-                      title: 'Festival Seru',
-                      events: HomeDummyData.festivalEvents,
-                      onLihatSemua: () {
-                        // TODO: Navigate to festival list screen
-                      },
-                      onEventTap: (event) {
-                        // TODO: Navigate to event detail
-                      },
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
-
-                  // ── Event Lainnya ──
-                  SliverToBoxAdapter(
-                    child: HorizontalEventSection(
-                      title: 'Event Lainnya',
-                      events: HomeDummyData.otherEvents,
-                      onLihatSemua: () {
-                        // TODO: Navigate to other events screen
-                      },
-                      onEventTap: (event) {
-                        // TODO: Navigate to event detail
-                      },
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
-
-                  // ── Promo Banner ──
-                  SliverToBoxAdapter(
-                    child: PromoBanner(
-                      onTap: () {
-                        // TODO: Navigate to promo page
-                      },
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
-
-                  // ── Cara Beli Tiket ──
-                  const SliverToBoxAdapter(child: CaraBeli()),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
-
-                  // ── FAQ ──
-                  SliverToBoxAdapter(
-                    child: FaqSection(items: HomeDummyData.faqItems),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
-
-                  // ── Newsletter CTA ──
-                  const SliverToBoxAdapter(child: NewsletterCta()),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.sectionVertical),
-                  ),
-
-                  // ── Trust Section ──
-                  const SliverToBoxAdapter(child: TrustSection()),
-
-                  // ── Bottom padding ──
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 32),
-                  ),
-                ],
-              ),
             ),
 
             // ── Bottom Navigation Bar ──

@@ -22,7 +22,7 @@ class TicketlyApp extends StatelessWidget {
         textTheme: GoogleFonts.poppinsTextTheme(),
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.bluePrimary,
-          background: AppColors.screenBg,
+          surface: AppColors.screenBg,
         ),
         scaffoldBackgroundColor: AppColors.screenBg,
         useMaterial3: true,

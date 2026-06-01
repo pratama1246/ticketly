@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# AI and Editor Rules
+.cursorrules
+AGENTS.md
+AI_RULES.md
+

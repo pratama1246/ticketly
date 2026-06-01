@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../data/home_dummy_data.dart';
+import '../models/event_model.dart';
 import 'event_card.dart';
 import 'section_header.dart';
 
@@ -32,7 +32,7 @@ class HorizontalEventSection extends StatelessWidget {
         SectionHeader(title: title, onLihatSemua: onLihatSemua),
         const SizedBox(height: 12),
         SizedBox(
-          height: 232, // Tinggi card: image 100 + content ~132
+          height: 270, // Tinggi card: image 100 + content ~170 (mencegah bottom overflow)
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(

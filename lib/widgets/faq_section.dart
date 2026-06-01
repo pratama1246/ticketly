@@ -28,29 +28,13 @@ class FaqSection extends StatelessWidget {
             style: AppTextStyles.captionStyle,
           ),
           const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
-              borderRadius: BorderRadius.circular(AppRadius.cardSmall),
-              boxShadow: AppShadows.cardShadow,
-            ),
-            child: Column(
-              children: List.generate(items.length, (index) {
-                return Column(
-                  children: [
-                    _FaqItem(item: items[index]),
-                    if (index < items.length - 1)
-                      const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: Color(0xFFF3F4F6),
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                  ],
-                );
-              }),
-            ),
+          Column(
+            children: items.map((item) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: _FaqItem(item: item),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -105,60 +89,67 @@ class _FaqItemState extends State<_FaqItem>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _toggle,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Question row ──
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.item.question,
-                    style: AppTextStyles.bodyStyle.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(AppRadius.cardSmall),
+        boxShadow: AppShadows.cardShadow,
+      ),
+      child: GestureDetector(
+        onTap: _toggle,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Question row ──
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.item.question,
+                      style: AppTextStyles.bodyStyle.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                AnimatedRotation(
-                  turns: _isExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 250),
-                  child: const Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 20,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-
-            // ── Answer (expand/collapse) ──
-            SizeTransition(
-              sizeFactor: _expandAnimation,
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Text(
-                    widget.item.answer,
-                    style: AppTextStyles.bodyStyle.copyWith(
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 250),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 20,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+
+              // ── Answer (expand/collapse) ──
+              SizeTransition(
+                sizeFactor: _expandAnimation,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text(
+                      widget.item.answer,
+                      style: AppTextStyles.bodyStyle.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -23,7 +23,7 @@ class PromoBanner extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [Color(0xFF072AC8), Color(0xFF1E96FC)],
+            colors: [Color(0xFF072AC8), Color(0xFF7C3AED)], // Biru ke Ungu sesuai DESIGN.md
           ),
         ),
         child: Row(
@@ -173,6 +173,31 @@ class _StepCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Color circleBgColor;
+    Color circleTextColor;
+
+    switch (data.number) {
+      case '1':
+        circleBgColor = const Color(0xFFE6EAFA);
+        circleTextColor = const Color(0xFF072AC8);
+        break;
+      case '2':
+        circleBgColor = const Color(0xFFE9F5FF);
+        circleTextColor = const Color(0xFF1E96FC);
+        break;
+      case '3':
+        circleBgColor = const Color(0xFFFFFBE6);
+        circleTextColor = const Color(0xFFD97706);
+        break;
+      case '4':
+        circleBgColor = const Color(0xFFDCFCE7);
+        circleTextColor = const Color(0xFF22C55E);
+        break;
+      default:
+        circleBgColor = AppColors.accentYellow;
+        circleTextColor = AppColors.textPrimary;
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -184,19 +209,19 @@ class _StepCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: AppColors.accentYellow,
+              color: circleBgColor,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 data.number,
                 style: GoogleFonts.poppins(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: circleTextColor,
                 ),
               ),
             ),
@@ -278,6 +303,12 @@ class NewsletterCta extends StatelessWidget {
                           color: AppColors.textHint,
                         ),
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        fillColor: Colors.transparent,
+                        filled: false,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
@@ -350,16 +381,22 @@ class TrustSection extends StatelessWidget {
               _TrustItem(
                 icon: Icons.verified_outlined,
                 iconColor: AppColors.bluePrimary,
+                bgColor: const Color(0xFFE6EAFA),
+                borderColor: AppColors.bluePrimary.withOpacity(0.4),
                 label: 'Transaksi\n100% Aman',
               ),
               _TrustItem(
-                icon: Icons.qr_code_2,
-                iconColor: AppColors.success,
+                icon: Icons.confirmation_number_outlined,
+                iconColor: const Color(0xFFEC4899),
+                bgColor: const Color(0xFFFCE7F3),
+                borderColor: const Color(0xFFEC4899).withOpacity(0.4),
                 label: 'E-Tiket\nInstant',
               ),
               _TrustItem(
                 icon: Icons.headset_mic_outlined,
-                iconColor: AppColors.accentYellow,
+                iconColor: const Color(0xFFEF4444),
+                bgColor: const Color(0xFFFFE4E6),
+                borderColor: const Color(0xFFEF4444).withOpacity(0.4),
                 label: 'Bantuan\n24/7',
               ),
             ],
@@ -373,11 +410,15 @@ class TrustSection extends StatelessWidget {
 class _TrustItem extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
+  final Color bgColor;
+  final Color borderColor;
   final String label;
 
   const _TrustItem({
     required this.icon,
     required this.iconColor,
+    required this.bgColor,
+    required this.borderColor,
     required this.label,
   });
 
@@ -389,9 +430,9 @@ class _TrustItem extends StatelessWidget {
           width: 52,
           height: 52,
           decoration: BoxDecoration(
-            color: AppColors.cardBg,
+            color: bgColor,
             shape: BoxShape.circle,
-            boxShadow: AppShadows.cardShadow,
+            border: Border.all(color: borderColor, width: 1.5),
           ),
           child: Icon(icon, color: iconColor, size: 24),
         ),

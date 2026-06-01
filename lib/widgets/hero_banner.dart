@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -19,9 +20,30 @@ class HeroBanner extends StatefulWidget {
 class _HeroBannerState extends State<HeroBanner> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  Timer? _autoPlayTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoPlay();
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (widget.items.isEmpty) return;
+      if (!mounted) return;
+      final nextPage = (_currentPage + 1) % widget.items.length;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
 
   @override
   void dispose() {
+    _autoPlayTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -93,27 +115,42 @@ class _HeroBannerSlide extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          // Background image — uncomment ketika ada real asset
-          // Image.asset(item.imageUrl, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
-
-          // Placeholder content
-          Positioned.fill(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.image_outlined, color: Colors.white38, size: 48),
-                const SizedBox(height: 8),
-                Text(
-                  item.eventName,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
+          // Background image dari network
+          if (item.imageUrl.isNotEmpty)
+            Positioned.fill(
+              child: Image.network(
+                item.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Icon(Icons.broken_image_outlined, color: Colors.white30, size: 48),
                 ),
-              ],
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                },
+              ),
+            )
+          else
+            // Placeholder content jika tidak ada image
+            Positioned.fill(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.image_outlined, color: Colors.white38, size: 48),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.eventName,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-          ),
 
           // Gradient overlay dari bawah
           Positioned(
