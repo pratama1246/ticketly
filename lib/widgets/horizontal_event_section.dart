@@ -32,7 +32,7 @@ class HorizontalEventSection extends StatelessWidget {
         SectionHeader(title: title, onLihatSemua: onLihatSemua),
         const SizedBox(height: 12),
         SizedBox(
-          height: 270, // Tinggi card: image 100 + content ~170 (mencegah bottom overflow)
+          height: 290, // Tinggi card: image 120 + content ~170 (mencegah bottom overflow)
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(
@@ -48,7 +48,7 @@ class HorizontalEventSection extends StatelessWidget {
                 ),
                 child: EventCard(
                   event: event,
-                  width: 160,
+                  width: 240,
                   onTap: () => onEventTap?.call(event),
                 ),
               );

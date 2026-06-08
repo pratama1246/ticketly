@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../models/event_model.dart';
+import '../models/event_detail_model.dart';
 import '../widgets/hero_banner.dart';
 
 class ApiService {
@@ -85,5 +86,27 @@ class ApiService {
       print('Error fetchEventsByCategory: $e');
     }
     return [];
+  }
+
+  // Fetch Event Detail by Slug
+  static Future<EventDetailModel?> fetchEventDetail(String slug) async {
+    try {
+      final response = await _client
+          .get(Uri.parse('${ApiConstants.baseUrl}/api/events/$slug'))
+          .timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded['status'] == 'success' && decoded['data'] != null) {
+          final data = Map<String, dynamic>.from(decoded['data']);
+          data['poster_image'] = normalizeImageUrl(data['poster_image']);
+          data['seatmap_image'] = normalizeImageUrl(data['seatmap_image']);
+          return EventDetailModel.fromJson(data);
+        }
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error fetchEventDetail: $e');
+    }
+    return null;
   }
 }

@@ -290,6 +290,7 @@ class NewsletterCta extends StatelessWidget {
                 Expanded(
                   child: Container(
                     height: 44,
+                    alignment: Alignment.centerLeft,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(AppRadius.button),
@@ -311,7 +312,6 @@ class NewsletterCta extends StatelessWidget {
                         filled: false,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 12,
                         ),
                         isDense: true,
                       ),

@@ -20,6 +20,7 @@ String formatIndonesianTime(DateTime dateTime) {
 
 class EventModel {
   final String id;
+  final String slug;
   final String title;
   final String location;
   final String date;
@@ -30,6 +31,7 @@ class EventModel {
 
   const EventModel({
     required this.id,
+    required this.slug,
     required this.title,
     required this.location,
     required this.date,
@@ -41,6 +43,7 @@ class EventModel {
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
     final id = json['id'].toString();
+    final slug = json['slug'] ?? '';
     final name = json['name'] ?? '';
     final venue = json['venue'] ?? '';
     final posterImage = json['poster_image'] ?? '';
@@ -64,6 +67,7 @@ class EventModel {
 
     return EventModel(
       id: id,
+      slug: slug,
       title: name,
       location: venue,
       date: dateStr,

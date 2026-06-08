@@ -9,6 +9,7 @@ class HomeDummyData {
   static const List<EventModel> concertEvents = [
     EventModel(
       id: '1',
+      slug: 'nct-dream-the-dream-show-4-world-tour',
       title: 'NCT DREAM: THE DREAM SHOW 4 WORLD TOUR',
       location: 'Jakarta International Stadium',
       date: '15 Januari 2026',
@@ -17,6 +18,7 @@ class HomeDummyData {
     ),
     EventModel(
       id: '2',
+      slug: 'nct-dream-the-dream-show-4-world-tour-2',
       title: 'NCT DREAM: THE DREAM SHOW 4 WORLD TOUR',
       location: 'Jakarta International Stadium',
       date: '16 Januari 2026',
@@ -28,6 +30,7 @@ class HomeDummyData {
   static const List<EventModel> festivalEvents = [
     EventModel(
       id: '3',
+      slug: 'p-land-season-of-wishes',
       title: 'P-LAND Season of Wishes - Bank RAYA User',
       location: 'Blok M Hub, Jakarta Selatan',
       date: '12 Des 2025',
@@ -36,6 +39,7 @@ class HomeDummyData {
     ),
     EventModel(
       id: '4',
+      slug: 'p-land-season-of-wishes-2',
       title: 'P-LAND Season of Wishes - Bank RAYA User',
       location: 'Blok M Hub, Jakarta Selatan',
       date: '13 Des 2025',
@@ -47,6 +51,7 @@ class HomeDummyData {
   static const List<EventModel> otherEvents = [
     EventModel(
       id: '5',
+      slug: 'law-fellas',
       title: 'Law Fellas',
       location: 'Gor Satria Purwokerto, Kabupaten Banyumas',
       date: '20 Nov 2025',
@@ -55,6 +60,7 @@ class HomeDummyData {
     ),
     EventModel(
       id: '6',
+      slug: 'law-fellas-2',
       title: 'Law Fellas',
       location: 'Gor Satria Purwokerto, Kabupaten Banyumas',
       date: '21 Nov 2025',

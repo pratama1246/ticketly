@@ -34,7 +34,6 @@ class EventCard extends StatelessWidget {
         clipBehavior: Clip.hardEdge,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             // ── Event Image ──
             _EventCardImage(
@@ -44,37 +43,40 @@ class EventCard extends StatelessWidget {
             ),
 
             // ── Event Info ──
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nama event — max 2 baris
-                  Text(
-                    event.title,
-                    style: AppTextStyles.cardTitleStyle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nama event — max 2 baris
+                    Text(
+                      event.title,
+                      style: AppTextStyles.cardTitleStyle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
 
-                  // Lokasi
-                  _EventMetaRow(
-                    icon: Icons.location_on_outlined,
-                    text: event.location,
-                  ),
-                  const SizedBox(height: 4),
+                    // Lokasi
+                    _EventMetaRow(
+                      icon: Icons.location_on_outlined,
+                      text: event.location,
+                    ),
+                    const SizedBox(height: 4),
 
-                  // Waktu
-                  _EventMetaRow(
-                    icon: Icons.access_time_outlined,
-                    text: event.time,
-                  ),
-                  const SizedBox(height: 10),
+                    // Waktu
+                    _EventMetaRow(
+                      icon: Icons.access_time_outlined,
+                      text: event.time,
+                    ),
 
-                  // Tombol Selengkapnya — outlined small
-                  _SelengkapnyaButton(onTap: onTap),
-                ],
+                    const Spacer(), // Push button to bottom
+
+                    // Tombol Selengkapnya — outlined small
+                    _SelengkapnyaButton(onTap: onTap),
+                  ],
+                ),
               ),
             ),
           ],
@@ -102,7 +104,7 @@ class _EventCardImage extends StatelessWidget {
       children: [
         // Placeholder image — replace dengan Image.network / Image.asset saat ada real assets
         Container(
-          height: 100,
+          height: 120,
           width: double.infinity,
           color: const Color(0xFFD1D5DB),
           child: imageUrl.isNotEmpty

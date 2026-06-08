@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../data/home_dummy_data.dart';
 import '../models/event_model.dart';
 import '../service/api_service.dart';
+import '../service/auth_service.dart';
 import '../constants/api_constants.dart';
 import '../widgets/hero_banner.dart';
 import '../widgets/search_bar_widget.dart';
@@ -13,6 +14,10 @@ import '../widgets/horizontal_event_section.dart';
 import '../widgets/faq_section.dart';
 import '../widgets/home_sections.dart';
 import '../widgets/bottom_nav_bar.dart';
+import 'my_tickets_screen.dart';
+import 'account_screen.dart';
+import 'event_list_screen.dart';
+import 'event_detail_screen.dart';
 
 // ─────────────────────────────────────────────
 // HomePage — Ticketly Home Screen
@@ -154,10 +159,24 @@ class _HomePageState extends State<HomePage> {
                                 title: 'Konser Terbaru',
                                 events: _concertEvents,
                                 onLihatSemua: () {
-                                  // TODO: Navigate to konser list screen
+                                   Navigator.push(
+                                     context,
+                                     MaterialPageRoute(
+                                       builder: (context) => EventListScreen(
+                                         title: 'Konser',
+                                         subtitle: 'Jadwal Konser Musik',
+                                         events: _concertEvents,
+                                       ),
+                                     ),
+                                   );
                                 },
                                 onEventTap: (event) {
-                                  // TODO: Navigate to event detail
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EventDetailScreen(slug: event.slug),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
@@ -173,10 +192,24 @@ class _HomePageState extends State<HomePage> {
                                 title: 'Festival Seru',
                                 events: _festivalEvents,
                                 onLihatSemua: () {
-                                  // TODO: Navigate to festival list screen
+                                   Navigator.push(
+                                     context,
+                                     MaterialPageRoute(
+                                       builder: (context) => EventListScreen(
+                                         title: 'Festival',
+                                         subtitle: 'Festival Pilihan',
+                                         events: _festivalEvents,
+                                       ),
+                                     ),
+                                   );
                                 },
                                 onEventTap: (event) {
-                                  // TODO: Navigate to event detail
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EventDetailScreen(slug: event.slug),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
@@ -192,10 +225,24 @@ class _HomePageState extends State<HomePage> {
                                 title: 'Event Lainnya',
                                 events: _otherEvents,
                                 onLihatSemua: () {
-                                  // TODO: Navigate to other events screen
+                                   Navigator.push(
+                                     context,
+                                     MaterialPageRoute(
+                                       builder: (context) => EventListScreen(
+                                         title: 'Event Lainnya',
+                                         subtitle: 'Jelajahi Semua Event',
+                                         events: _otherEvents,
+                                       ),
+                                     ),
+                                   );
                                 },
                                 onEventTap: (event) {
-                                  // TODO: Navigate to event detail
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EventDetailScreen(slug: event.slug),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
@@ -256,8 +303,27 @@ class _HomePageState extends State<HomePage> {
             TicketlyBottomNavBar(
               currentIndex: _currentNavIndex,
               onTap: (index) {
-                setState(() => _currentNavIndex = index);
-                // TODO: Handle navigation between tabs
+                if (index == 1) {
+                  Navigator.pushReplacement(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const MyTicketsScreen(),
+                      transitionDuration: Duration.zero,
+                    ),
+                  );
+                } else if (index == 2) {
+                  Navigator.pushReplacement(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const AccountScreen(),
+                      transitionDuration: Duration.zero,
+                    ),
+                  );
+                } else {
+                  setState(() => _currentNavIndex = index);
+                }
               },
             ),
           ],
@@ -273,10 +339,49 @@ class _HomePageState extends State<HomePage> {
 // Greeting teks + nama user + avatar kanan
 // ─────────────────────────────────────────────
 
-class _HomeAppBar extends StatelessWidget {
+class _HomeAppBar extends StatefulWidget {
+  @override
+  State<_HomeAppBar> createState() => _HomeAppBarState();
+}
+
+class _HomeAppBarState extends State<_HomeAppBar> {
+  String _displayName = 'Tamu';
+  String _avatarUrl = '';
+  String _initial = 'T';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final loggedIn = await AuthService.isLoggedIn();
+    if (loggedIn) {
+      final user = await AuthService.getUser();
+      if (user != null && mounted) {
+        setState(() {
+          final username = user['username'] ?? 'User';
+          _displayName = username;
+          _avatarUrl = user['foto'] ?? '';
+          _initial = username.isNotEmpty ? username[0].toUpperCase() : 'U';
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _displayName = 'Tamu';
+          _avatarUrl = '';
+          _initial = 'T';
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final hasImage = _avatarUrl.isNotEmpty && _avatarUrl.startsWith('http');
 
     return Container(
       color: AppColors.screenBg,
@@ -310,7 +415,7 @@ class _HomeAppBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Hana', // TODO: Replace dengan nama user dari state/session
+                  _displayName,
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -324,7 +429,10 @@ class _HomeAppBar extends StatelessWidget {
           // ── Avatar ──
           GestureDetector(
             onTap: () {
-              // TODO: Navigate to profile
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const AccountScreen()),
+              );
             },
             child: Container(
               width: 44,
@@ -335,16 +443,31 @@ class _HomeAppBar extends StatelessWidget {
                 border: Border.all(color: AppColors.bluePrimary, width: 2),
               ),
               child: ClipOval(
-                child: Center(
-                  child: Text(
-                    'H', // Inisial user — ganti Image.network kalau ada foto
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.bluePrimary,
-                    ),
-                  ),
-                ),
+                child: hasImage
+                    ? Image.network(
+                        ApiService.normalizeImageUrl(_avatarUrl),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Text(
+                            _initial,
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.bluePrimary,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          _initial,
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.bluePrimary,
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
