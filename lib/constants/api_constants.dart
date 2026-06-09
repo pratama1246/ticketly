@@ -12,8 +12,8 @@ class ApiConstants {
   //  - Android Emulator → http://10.0.2.2:8080
   static String get baseUrl {
     if (kIsWeb) {
-      // Laragon default port 80 (tanpa port explicit = port 80)
-      return 'http://localhost';
+      // php spark serve default port 8080
+      return 'http://localhost:8080';
     }
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:8080';
