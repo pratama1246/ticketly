@@ -386,7 +386,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         .replaceAll('&mdash;', '—');
 
     final List<Widget> widgets = [];
-    final regExp = RegExp(r'<(h2|h3|p|li)[^>]*>(.*?)<\/\1>|<br\s*\/?>', dotAll: true, caseSensitive: false);
+    final regExp = RegExp(r'<(h2|h3|p|li|div)[^>]*>(.*?)<\/\1>|<br\s*\/?>', dotAll: true, caseSensitive: false);
     final matches = regExp.allMatches(cleanHtml);
 
     if (matches.isEmpty) {
@@ -421,7 +421,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             )),
           ),
         ));
-      } else if (tag == 'p') {
+      } else if (tag == 'p' || tag == 'div') {
         widgets.add(Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: RichText(
@@ -458,14 +458,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   TextSpan _parseInlineTags(String text, TextStyle style) {
+    // Strip all tags EXCEPT strong and b tags (e.g. clean up span, em, a, etc.)
+    final cleanText = text.replaceAll(RegExp(r'<(?!/?(strong|b)\b)[^>]*>', caseSensitive: false), '');
+
     final regExp = RegExp(r'<(strong|b)>(.*?)<\/\1>', caseSensitive: false);
     final List<TextSpan> children = [];
     int lastEnd = 0;
 
-    final matches = regExp.allMatches(text);
+    final matches = regExp.allMatches(cleanText);
     for (final match in matches) {
       if (match.start > lastEnd) {
-        children.add(TextSpan(text: text.substring(lastEnd, match.start)));
+        children.add(TextSpan(text: cleanText.substring(lastEnd, match.start)));
       }
       final content = match.group(2) ?? '';
       children.add(TextSpan(
@@ -475,8 +478,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       lastEnd = match.end;
     }
 
-    if (lastEnd < text.length) {
-      children.add(TextSpan(text: text.substring(lastEnd)));
+    if (lastEnd < cleanText.length) {
+      children.add(TextSpan(text: cleanText.substring(lastEnd)));
     }
 
     return TextSpan(style: style, children: children);
