@@ -288,23 +288,23 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       case 'ended':
         bgColor = Colors.grey[200]!;
         textColor = Colors.grey[600]!;
-        label = 'berakhir';
+        label = 'Berakhir';
         break;
       case 'sold_out':
         bgColor = AppColors.error.withOpacity(0.1);
         textColor = AppColors.error;
-        label = 'habis terjual';
+        label = 'Habis Terjual';
         break;
       case 'almost_sold':
         bgColor = AppColors.warning.withOpacity(0.1);
         textColor = AppColors.warning;
-        label = 'hampir habis';
+        label = 'Hampir Habis';
         break;
       case 'available':
       default:
         bgColor = const Color(0xFFDCFCE7); // Light green matching mockup
         textColor = const Color(0xFF16A34A);
-        label = 'sedang berlangsung';
+        label = 'Sedang Berlangsung';
         break;
     }
 

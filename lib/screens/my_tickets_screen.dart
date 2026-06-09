@@ -134,11 +134,18 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.screenBg,
+      backgroundColor: const Color(0xFFFFFBEB),
       appBar: AppBar(
-        title: const Text('Tiket Saya'),
-        centerTitle: false,
+        title: Text(
+          'My Ticket',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.white,
+        elevation: 0,
         actions: [
           if (!_isLoading)
             IconButton(
@@ -246,7 +253,6 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderDefault, width: 1.2),
         boxShadow: AppShadows.cardShadow,
       ),
       clipBehavior: Clip.hardEdge,
@@ -255,103 +261,105 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
               children: [
-                // Event Poster thumbnail
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    posterUrl,
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 72,
-                      height: 72,
-                      color: AppColors.bluePrimaryLight,
-                      child: const Icon(Icons.music_note, color: AppColors.bluePrimary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                
-                // Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.ticket.eventName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Event Poster thumbnail
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        posterUrl,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 100,
+                          height: 100,
+                          color: AppColors.bluePrimaryLight,
+                          child: const Icon(Icons.music_note, color: AppColors.bluePrimary),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            item.ticket.eventDate,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              venue,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          const Divider(height: 1, color: AppColors.borderDefault),
-          
-          // Action Button Area
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 4.0),
-                  child: Text(
-                    '${item.ticket.ticketName} • ${item.ticket.seatLabel}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.bluePrimary,
                     ),
-                  ),
+                    const SizedBox(width: 16),
+                    
+                    // Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.ticket.eventName.toUpperCase(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textPrimary),
+                              const SizedBox(width: 8),
+                              Text(
+                                item.ticket.eventDate,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time, size: 14, color: AppColors.textPrimary),
+                              const SizedBox(width: 8),
+                              Text(
+                                item.ticket.eventTime.isNotEmpty ? item.ticket.eventTime : '19.00 - 21.00 WIB',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textPrimary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  venue,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 16),
+                
+                // Full Width Action Button matching mockup
                 SizedBox(
-                  height: 38,
+                  width: double.infinity,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.push(
@@ -367,12 +375,24 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      backgroundColor: AppColors.bluePrimary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text(
-                      'Lihat Tiket',
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Lihat Tiket',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.confirmation_number_outlined, size: 16, color: Colors.white),
+                      ],
                     ),
                   ),
                 ),

@@ -29,7 +29,7 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  int _currentStep = 1; // Step 1: T&C, 2: Payment Method, 3: Confirmation, 4: Bill Details
+  int _currentStep = 1; // Step 1: S&K, 2: Data Diri, 3: Metode Pembayaran, 4: Konfirmasi, 5: Detail Tagihan
   bool _isLoading = false;
 
   // Step 1: Syarat & Ketentuan
@@ -43,12 +43,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _selectedMethodType;
   String? _selectedMethodLogo;
 
-  // Step 3: Data Diri Form
+  // Step 3: Data Diri Form & Consent Checkboxes
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _nikController = TextEditingController();
+  final _dobController = TextEditingController();
+
+  String _waConsent = 'iya'; // 'iya' or 'tidak'
+  bool _agreeTnC = false;
+  bool _agreeProcessing = false;
 
   // Dynamic pricing calculated from backend /api/checkout/calculate
   int _apiSubTotal = 0;
@@ -64,9 +70,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   int? _createdGrandTotal;
   DateTime? _expiresAt;
 
-  // Timers
+  // Dual Timers
+  Timer? _checkoutTimer;
+  int _checkoutSecondsRemaining = 300; // 5:00 minutes checkout session (Steps 1-4)
+
   Timer? _countdownTimer;
-  int _secondsRemaining = 900; // 15:00 minutes local countdown for Steps 2-3
+  int _secondsRemaining = 900; // 15:00 minutes payment session (Step 5)
 
   @override
   void initState() {
@@ -74,21 +83,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _loadUserInfo();
     _loadPaymentMethods();
     _calculatePricing();
-    _startLocalTimer();
   }
 
   @override
   void dispose() {
+    _checkoutTimer?.cancel();
     _countdownTimer?.cancel();
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _nikController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
-  void _startLocalTimer() {
+  void _startCheckoutTimer() {
+    _checkoutTimer?.cancel();
+    _checkoutSecondsRemaining = 300;
+    _checkoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_checkoutSecondsRemaining > 0) {
+            _checkoutSecondsRemaining--;
+          } else {
+            _checkoutTimer?.cancel();
+            _handleCheckoutSessionExpired();
+          }
+        });
+      }
+    });
+  }
+
+  void _startPaymentTimer(DateTime expiresAt) {
+    _checkoutTimer?.cancel();
     _countdownTimer?.cancel();
+
+    final now = DateTime.now();
+    _secondsRemaining = expiresAt.difference(now).inSeconds;
+    if (_secondsRemaining < 0) _secondsRemaining = 0;
+
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
@@ -96,25 +130,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             _secondsRemaining--;
           } else {
             _countdownTimer?.cancel();
-            _handleSessionExpired();
+            _handlePaymentSessionExpired();
           }
         });
       }
     });
   }
 
-  void _handleSessionExpired() {
+  void _handleCheckoutSessionExpired() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Waktu Habis',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          'Sesi Berakhir',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.red),
         ),
         content: Text(
-          'Sesi checkout Anda telah berakhir. Silakan ulangi pemesanan Anda.',
+          'Waktu checkout Anda telah habis (5 menit). Silakan ulangi pemesanan Anda.',
           style: GoogleFonts.poppins(),
         ),
         actions: [
@@ -123,6 +157,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               Navigator.pop(context); // Close dialog
               Navigator.pop(context); // Back to event detail
             },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bluePrimary),
+            child: const Text('Kembali'),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _handlePaymentSessionExpired() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Sesi Pembayaran Berakhir',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.red),
+        ),
+        content: Text(
+          'Waktu pembayaran tagihan Anda telah habis. Pesanan dibatalkan secara otomatis.',
+          style: GoogleFonts.poppins(),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Back to event detail
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.bluePrimary),
             child: const Text('Kembali'),
           )
         ],
@@ -133,10 +196,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _loadUserInfo() async {
     final user = await AuthService.getUser();
     if (user != null && mounted) {
+      final String fullName = user['username'] ?? '';
+      final List<String> parts = fullName.split(' ');
       setState(() {
-        _nameController.text = user['username'] ?? '';
+        if (parts.isNotEmpty) {
+          _firstNameController.text = parts[0];
+          if (parts.length > 1) {
+            _lastNameController.text = parts.sublist(1).join(' ');
+          }
+        }
         _emailController.text = user['email'] ?? '';
-        // If profile details don't have phone/NIK, leave empty for user input
       });
     }
   }
@@ -281,7 +350,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // Calls API to create a pending order on the server
   Future<void> _startOrderOnServer() async {
-    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     final token = await AuthService.getToken();
@@ -302,8 +370,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
 
     final body = {
-      'first_name': _nameController.text.trim(),
-      'last_name': '',
+      'first_name': _firstNameController.text.trim(),
+      'last_name': _lastNameController.text.trim(),
       'email': _emailController.text.trim(),
       'phone_number': _phoneController.text.trim(),
       'identity_number': _nikController.text.trim(),
@@ -333,15 +401,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           _createdTrxId = data['trx_id'];
           _createdGrandTotal = _parseInt(data['grand_total']);
           _expiresAt = parsedExpiresAt;
-          
-          // Re-calculate remaining seconds based on server expiry
-          _secondsRemaining = parsedExpiresAt.difference(DateTime.now()).inSeconds;
-          if (_secondsRemaining < 0) _secondsRemaining = 0;
-
-          _currentStep = 4;
+          _currentStep = 5;
           _isLoading = false;
         });
-        _startLocalTimer();
+        _startPaymentTimer(parsedExpiresAt);
       } else {
         setState(() => _isLoading = false);
         _showToast(decoded['message'] ?? 'Gagal membuat pesanan.');
@@ -655,7 +718,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_selectedMethodType == 'ewallet') {
       return [
         'Buka aplikasi e-wallet Anda.',
-        'Pilih menu bayar / scan QRIS.',
+        'Pilih menu **bayar / scan QRIS**.',
         'Masukkan nomor transaksi atau pindai QR code.',
         'Periksa detail tagihan Anda.',
         'Masukkan PIN Anda untuk menyelesaikan pembayaran.'
@@ -663,111 +726,144 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     return [
       'Buka aplikasi Mobile Banking atau ATM Anda.',
-      'Pilih menu Transfer Virtual Account.',
-      'Masukkan Nomor VA ${_getVirtualAccountNumber()}.',
+      'Pilih menu **Transfer Virtual Account**.',
+      'Masukkan Nomor VA: **${_getVirtualAccountNumber()}**.',
       'Periksa detail nama dan total tagihan.',
       'Masukkan PIN Anda dan simpan bukti transaksi.'
     ];
   }
 
-  // Brand badges colors helper
-  Color _getBrandColor() {
-    switch (_selectedMethodCode) {
-      case 'bca': return const Color(0xFF005CAA);
-      case 'bri': return const Color(0xFF003882);
-      case 'bni': return const Color(0xFFE55300);
-      case 'mandiri_bill': return const Color(0xFFFFC600);
-      case 'gopay': return const Color(0xFF00AED6);
-      case 'ovo': return const Color(0xFF4C2A86);
-      case 'dana': return const Color(0xFF108EE9);
-      case 'shopeepay': return const Color(0xFFEE4D2D);
-      case 'allobank': return const Color(0xFF00B1AF);
-      case 'akulaku': return const Color(0xFFE11919);
-      default: return AppColors.bluePrimary;
-    }
-  }
 
-  // Helper widget to build horizontal stepper bar
   Widget _buildStepIndicator() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildStepCircle(1, Icons.check, 'S&K'),
-          _buildStepDivider(1),
-          _buildStepCircle(2, Icons.payment, 'Metode'),
+          _buildStepCircle(2, Icons.person_outline, 'Data Diri', 'Info Pemesan'),
           _buildStepDivider(2),
-          _buildStepCircle(3, Icons.assignment, 'Konfirmasi'),
+          _buildStepCircle(3, Icons.credit_card, 'Metode', 'Metode Bayar'),
           _buildStepDivider(3),
-          _buildStepCircle(4, Icons.receipt_long, 'Bayar'),
+          _buildStepCircle(4, Icons.assignment_outlined, 'Konfirmasi', 'Cek Pesanan'),
+          _buildStepDivider(4),
+          _buildStepCircle(5, Icons.account_balance_wallet_outlined, 'Bayar', 'Selesaikan'),
         ],
       ),
     );
   }
 
-  Widget _buildStepCircle(int stepNum, IconData iconData, String label) {
+  Widget _buildStepCircle(int stepNum, IconData iconData, String title, String subtitle) {
     final isCompleted = _currentStep > stepNum;
     final isActive = _currentStep == stepNum;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: isCompleted
-                ? const Color(0xFFDCFCE7)
-                : (isActive ? AppColors.bluePrimary : Colors.grey[200]),
-            shape: BoxShape.circle,
-            border: isCompleted
-                ? Border.all(color: const Color(0xFF22C55E), width: 1)
-                : null,
-          ),
-          child: Icon(
-            isCompleted ? Icons.check : iconData,
-            size: 16,
-            color: isCompleted
-                ? const Color(0xFF16A34A)
-                : (isActive ? Colors.white : Colors.grey[500]),
-          ),
-        ),
-      ],
+    Widget circle = Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: isCompleted
+            ? const Color(0xFFDCFCE7)
+            : (isActive ? const Color(0xFFDBEAFE) : const Color(0xFFF3F4F6)),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        isCompleted ? Icons.check : iconData,
+        size: 18,
+        color: isCompleted
+            ? const Color(0xFF16A34A)
+            : (isActive ? AppColors.bluePrimary : const Color(0xFF9CA3AF)),
+      ),
     );
+
+    if (isActive) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          circle,
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.bluePrimary,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF3B82F6),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else {
+      return circle;
+    }
   }
 
   Widget _buildStepDivider(int stepAfter) {
     final isCompleted = _currentStep > stepAfter;
-    return Container(
-      width: 48,
-      height: 2,
-      color: isCompleted ? const Color(0xFF22C55E) : Colors.grey[300],
+    return Expanded(
+      child: Container(
+        height: 2,
+        color: isCompleted ? const Color(0xFF22C55E) : const Color(0xFFE5E7EB),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+      ),
     );
+  }
+
+  String _getAppBarTitle() {
+    switch (_currentStep) {
+      case 1:
+        return 'Syarat & Ketentuan';
+      case 2:
+        return 'Data Diri';
+      case 3:
+        return 'Metode Pembayaran';
+      case 4:
+        return 'Konfirmasi Pesanan';
+      case 5:
+        return 'Konfirmasi Pesanan';
+      default:
+        return 'Checkout';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.screenBg,
+      backgroundColor: const Color(0xFFFFFBEB),
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
-          _currentStep == 1
-              ? 'Syarat & Ketentuan'
-              : (_currentStep == 2
-                  ? 'Metode Pembayaran'
-                  : 'Konfirmasi Pesanan'),
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          _getAppBarTitle(),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () {
-            if (_currentStep > 1 && _currentStep < 4) {
+            if (_currentStep > 1 && _currentStep < 5) {
               setState(() {
                 _currentStep--;
+                if (_currentStep == 1) {
+                  _checkoutTimer?.cancel();
+                }
               });
-            } else if (_currentStep == 4) {
+            } else if (_currentStep == 5) {
               // Confirm canceling order if they try to leave VA step
               showDialog(
                 context: context,
@@ -800,17 +896,69 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         children: [
           Column(
             children: [
-              _buildStepIndicator(),
+              if (_currentStep > 1) _buildStepIndicator(),
               Expanded(
                 child: _isLoadingCalculation
                     ? const Center(child: CircularProgressIndicator(color: AppColors.bluePrimary))
                     : SingleChildScrollView(
                         padding: const EdgeInsets.all(16),
-                        child: _buildStepContent(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_currentStep >= 2 && _currentStep <= 4) const SizedBox(height: 48),
+                            _buildStepContent(),
+                          ],
+                        ),
                       ),
               ),
             ],
           ),
+          if (_currentStep >= 2 && _currentStep <= 4)
+            Positioned(
+              top: 72.0, // Floating below the stepper indicator
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.access_time_filled, color: Color(0xFF4F46E5), size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Sisa waktu  ',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF4F46E5),
+                        ),
+                      ),
+                      Text(
+                        _formatTimerText(_checkoutSecondsRemaining),
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E1B4B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           if (_isLoading)
             Container(
               color: Colors.black.withOpacity(0.3),
@@ -830,10 +978,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       case 1:
         return _buildTnCStep();
       case 2:
-        return _buildPaymentMethodStep();
+        return _buildDataDiriStep();
       case 3:
-        return _buildConfirmOrderStep();
+        return _buildPaymentMethodStep();
       case 4:
+        return _buildConfirmOrderStep();
+      case 5:
         return _buildBillDetailStep();
       default:
         return Container();
@@ -844,54 +994,49 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // STEP 1: Syarat & Ketentuan
   // ─────────────────────────────────────────────
   Widget _buildTnCStep() {
+    final List<String> absoluteTerms = [
+      'Penonton wajib memiliki tiket resmi dan menunjukkan e-ticket yang dimiliki.',
+      'Tiket yang sudah dibeli tidak dapat dikembalikan atau ditukar.',
+      'Penyelenggara berhak menolak atau mengeluarkan penonton yang mengganggu ketertiban.',
+      'Dilarang membawa senjata, alkohol, parfum, narkoba, makanan/minuman dari luar, dan kamera profesional.',
+      'Penonton wajib menjaga ketertiban, kebersihan, serta mengikuti arahan petugas.',
+      'Penyelenggara berhak mendokumentasikan acara dan menggunakan hasilnya untuk publikasi.',
+      'Jadwal dapat berubah tanpa pemberitahuan.',
+      'Penyelenggara tidak bertanggung jawab atas kehilangan atau kerusakan barang pribadi.',
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderDefault),
-            boxShadow: AppShadows.cardShadow,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Syarat & Ketentuan Pembelian',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Render Terms list dynamically
-              ..._parseHtmlTerms(widget.event.description).map((term) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('• ', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-                        Expanded(
-                          child: Text(
-                            term,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppColors.textPrimary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
+        ...absoluteTerms.map((term) => Padding(
+              padding: const EdgeInsets.only(bottom: 12.0, left: 8.0, right: 8.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '•  ',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      height: 1.4,
                     ),
-                  )),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
+                  ),
+                  Expanded(
+                    child: Text(
+                      term,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+        const SizedBox(height: 24),
         Row(
           children: [
             Checkbox(
@@ -913,9 +1058,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: Text(
                   'Klik Untuk Melanjutkan',
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: const Color(0xFF374151),
                   ),
                 ),
               ),
@@ -931,40 +1076,372 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ? () {
                     setState(() {
                       _currentStep = 2;
+                      _startCheckoutTimer();
                     });
                   }
                 : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: _isTnCAccepted ? AppColors.bluePrimary : Colors.grey[300],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Lanjut'),
+            child: Text(
+              'Lanjut',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  List<String> _parseHtmlTerms(String html) {
-    if (html.isEmpty) {
-      return [
-        'Tiket yang sudah dibeli tidak dapat ditukar atau dikembalikan.',
-        'Satu tiket hanya berlaku untuk satu orang.',
-        'Penyelenggara berhak melarang masuk jika terjadi pelanggaran aturan.',
-      ];
-    }
-    // Clean html tags to plain bullets
-    String clean = html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-    // Split by lines or lists
-    final list = clean.split(RegExp(r'\r\n|\n|\•'));
-    return list
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty && e.length > 5)
-        .toList();
+  Widget _buildDataDiriStep() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFieldLabel('Nama Depan', isRequired: true),
+          TextFormField(
+            controller: _firstNameController,
+            validator: (val) => val == null || val.trim().isEmpty ? 'Nama depan wajib diisi' : null,
+            decoration: _buildInputDecoration('Masukkan nama depan'),
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+
+          _buildFieldLabel('Nama Belakang'),
+          TextFormField(
+            controller: _lastNameController,
+            decoration: _buildInputDecoration('Masukkan nama belakang'),
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+
+          _buildFieldLabel('Email', isRequired: true),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            validator: (val) =>
+                val == null || !val.contains('@') ? 'Masukkan email yang valid' : null,
+            decoration: _buildInputDecoration('nama@domain.com'),
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+
+          _buildFieldLabel('Nomor Telepon', isRequired: true),
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            validator: (val) => val == null || val.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
+            decoration: _buildInputDecoration('08xxxxxxxxxx'),
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+
+          _buildFieldLabel('Nomor Identitas (KTP/SIM/NIK/Paspor,dll)', isRequired: true),
+          TextFormField(
+            controller: _nikController,
+            keyboardType: TextInputType.text,
+            validator: (val) =>
+                val == null || val.trim().isEmpty ? 'Nomor identitas wajib diisi' : null,
+            decoration: _buildInputDecoration('Masukkan nomor identitas'),
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+
+          _buildFieldLabel('Tanggal Lahir'),
+          TextFormField(
+            controller: _dobController,
+            readOnly: true,
+            onTap: () => _selectDate(context),
+            decoration: _buildInputDecoration('DD/MM/YYYY', prefixIcon: const Icon(Icons.calendar_month, color: Color(0xFF1E3A8A))),
+            style: GoogleFonts.poppins(fontSize: 14),
+          ),
+          const SizedBox(height: 20),
+
+          Text(
+            'Saya setuju untuk menerima notifikasi terkait pemesanan tiket berikut melalui nomor WhatsApp saya.',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Radio<String>(
+                value: 'iya',
+                groupValue: _waConsent,
+                activeColor: AppColors.bluePrimary,
+                onChanged: (val) {
+                  setState(() {
+                    _waConsent = val!;
+                  });
+                },
+              ),
+              Text(
+                'Iya',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
+              ),
+              const SizedBox(width: 30),
+              Radio<String>(
+                value: 'tidak',
+                groupValue: _waConsent,
+                activeColor: AppColors.bluePrimary,
+                onChanged: (val) {
+                  setState(() {
+                    _waConsent = val!;
+                  });
+                },
+              ),
+              Text(
+                'Tidak',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Checkbox 1
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _agreeTnC,
+                activeColor: AppColors.bluePrimary,
+                onChanged: (val) {
+                  setState(() {
+                    _agreeTnC = val ?? false;
+                  });
+                },
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8.0, right: 8.0),
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.black, height: 1.4),
+                      children: const [
+                        TextSpan(text: 'Dengan mengklik "Lanjut", kamu menyetujui '),
+                        TextSpan(
+                          text: 'Syarat & Ketentuan',
+                          style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline, fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(text: ' dan '),
+                        TextSpan(
+                          text: 'Kebijakan Privasi',
+                          style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline, fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(text: ' Ticketly.'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Checkbox 2
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _agreeProcessing,
+                activeColor: AppColors.bluePrimary,
+                onChanged: (val) {
+                  setState(() {
+                    _agreeProcessing = val ?? false;
+                  });
+                },
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8.0, right: 8.0),
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.black, height: 1.4),
+                      children: const [
+                        TextSpan(text: 'Dengan mengklik "Lanjut", kamu menyetujui '),
+                        TextSpan(
+                          text: 'Kebijakan Pemrosesan Data Pribadi',
+                          style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline, fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(text: ' Ticketly.'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 28),
+
+          // Action Buttons
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: (_agreeTnC && _agreeProcessing)
+                  ? () {
+                      if (_formKey.currentState!.validate()) {
+                        setState(() {
+                          _currentStep = 3;
+                        });
+                      }
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: (_agreeTnC && _agreeProcessing) ? AppColors.bluePrimary : Colors.grey[300],
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                'Lanjut',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: (_agreeTnC && _agreeProcessing) ? Colors.white : Colors.grey[600],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: const Text('Batalkan Checkout?'),
+                    content: const Text('Apakah Anda yakin ingin membatalkan checkout ini?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Tidak'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Ya, Batal'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.black,
+                side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                'Batal',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  // ─────────────────────────────────────────────
-  // STEP 2: Metode Pembayaran
-  // ─────────────────────────────────────────────
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.bluePrimary,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _dobController.text = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+      });
+    }
+  }
+
+  Widget _buildFieldLabel(String text, {bool isRequired = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0, top: 4.0),
+      child: RichText(
+        text: TextSpan(
+          text: text,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+          children: isRequired
+              ? [
+                  const TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  )
+                ]
+              : [],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration(String hintText, {Widget? prefixIcon}) {
+    return InputDecoration(
+      hintText: hintText,
+      prefixIcon: prefixIcon,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      hintStyle: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 13),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.bluePrimary, width: 2.0),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.red, width: 2.0),
+      ),
+    );
+  }
+
   Widget _buildPaymentMethodStep() {
     final ewallets = _paymentMethods.where((m) => m['type'] == 'ewallet').toList();
     final vas = _paymentMethods.where((m) => m['type'] == 'virtual_account').toList();
@@ -973,38 +1450,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Floating timer box
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFBBF24), width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.timer_outlined, color: Color(0xFFFBBF24), size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  'Sisa waktu  ',
-                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                Text(
-                  _formatTimerText(_secondsRemaining),
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFBBF24),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-
         // E-Wallet group
         _buildPaymentGroupHeader('E-Wallet'),
         ...ewallets.map((m) => _buildPaymentItem(m)),
@@ -1020,7 +1465,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ...others.map((m) => _buildPaymentItem(m)),
         const SizedBox(height: 28),
 
-        // Action buttons
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -1028,11 +1472,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             onPressed: _selectedMethodCode != null
                 ? () {
                     setState(() {
-                      _currentStep = 3;
+                      _currentStep = 4;
                     });
                   }
                 : null,
-            child: const Text('Lanjut'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.bluePrimary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'Lanjut',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -1040,12 +1495,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           width: double.infinity,
           height: 52,
           child: OutlinedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              setState(() {
+                _currentStep = 2;
+              });
+            },
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: const BorderSide(color: AppColors.borderDefault, width: 1.5),
+              foregroundColor: Colors.black,
+              side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Batal'),
+            child: Text(
+              'Kembali',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
       ],
@@ -1160,323 +1627,366 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // STEP 3: Konfirmasi Pesanan (Data Diri + Summary)
   // ─────────────────────────────────────────────
   Widget _buildConfirmOrderStep() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Timer
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFBBF24), width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.timer_outlined, color: Color(0xFFFBBF24), size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Sisa waktu  ',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  Text(
-                    _formatTimerText(_secondsRemaining),
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFBBF24),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Event summary + Tiket yang Dipesan + Data Diri in a single card
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderDefault),
+            boxShadow: AppShadows.cardShadow,
           ),
-          const SizedBox(height: 20),
-
-          // Event Summary card
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderDefault),
-              boxShadow: AppShadows.cardShadow,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.event.posterImage != null && widget.event.posterImage!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      widget.event.posterImage!,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Event Poster
+              if (widget.event.posterImage != null && widget.event.posterImage!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Image.network(
+                    widget.event.posterImage!,
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Event Name
+                    Text(
+                      widget.event.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Date, time, venue
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.event.date,
+                          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.event.time.isNotEmpty ? widget.event.time : '19.00 - 21.00 WIB',
+                          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.event.venue,
+                            style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24, color: AppColors.borderDefault),
+                    
+                    // Tiket yang Dipesan
+                    Text(
+                      'Tiket yang Dipesan',
+                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    const SizedBox(height: 8),
+                    ...widget.selectedQuantities.entries.map((entry) {
+                      if (entry.value <= 0) return Container();
+                      final ticket = widget.event.tickets.firstWhere((t) => t.id == entry.key);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${entry.value}x ${ticket.name}',
+                              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondary),
+                            ),
+                            Text(
+                              _formatCurrency(ticket.price * entry.value),
+                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Divider(height: 24, color: AppColors.borderDefault),
+
+                    // Data Diri
+                    Text(
+                      'Data Diri',
+                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildConfirmDetailRow('Nama Lengkap', "${_firstNameController.text} ${_lastNameController.text}".trim()),
+                    const SizedBox(height: 10),
+                    _buildConfirmDetailRow('Email', _emailController.text),
+                    const SizedBox(height: 10),
+                    _buildConfirmDetailRow('Nomor Telepon', _phoneController.text),
+                    const SizedBox(height: 10),
+                    _buildConfirmDetailRow('Nomor Identitas', _nikController.text),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Rincian Biaya Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderDefault),
+            boxShadow: AppShadows.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Rincian Biaya',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              const SizedBox(height: 12),
+              ...widget.selectedQuantities.entries.map((entry) {
+                if (entry.value <= 0) return Container();
+                final ticket = widget.event.tickets.firstWhere((t) => t.id == entry.key);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        widget.event.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                        '${entry.value}x ${ticket.name}',
+                        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondary),
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            widget.event.date,
-                            style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              widget.event.venue,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondary),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        _formatCurrency(ticket.price * entry.value),
+                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Tickets List detail
-          Text(
-            'Tiket yang Dipesan',
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...widget.selectedQuantities.entries.map((entry) {
-            if (entry.value <= 0) return Container();
-            final ticket = widget.event.tickets.firstWhere((t) => t.id == entry.key);
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.borderDefault),
-              ),
-              child: Row(
+                );
+              }),
+              const Divider(height: 20, color: AppColors.borderDefault),
+              _buildPriceRow('Subtotal Tiket', _apiSubTotal),
+              const SizedBox(height: 8),
+              _buildPriceRow('PPN (10%)', _apiTaxAmount),
+              const SizedBox(height: 8),
+              _buildPriceRow('Biaya Admin', _apiAdminFee),
+              const SizedBox(height: 8),
+              _buildPriceRow('Biaya Platform', _apiPlatformFee),
+              const Divider(height: 20, color: AppColors.borderDefault),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${entry.value}x  ${ticket.name}',
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
+                    'Total Bayar',
+                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                   Text(
-                    _formatCurrency(ticket.price * entry.value),
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                    _formatCurrency(_apiGrandTotal),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.bluePrimary,
+                    ),
                   ),
                 ],
               ),
-            );
-          }),
-          const SizedBox(height: 20),
-
-          // Form Data Diri
-          Text(
-            'Data Diri Pemesan',
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
+            ],
           ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderDefault),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildFormFieldLabel('Nama Lengkap'),
-                TextFormField(
-                  controller: _nameController,
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Nama lengkap wajib diisi' : null,
-                  decoration: const InputDecoration(hintText: 'Nama lengkap sesuai identitas'),
-                ),
-                const SizedBox(height: 12),
+        ),
+        const SizedBox(height: 20),
 
-                _buildFormFieldLabel('Email'),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (val) =>
-                      val == null || !val.contains('@') ? 'Masukkan alamat email valid' : null,
-                  decoration: const InputDecoration(hintText: 'nama@domain.com'),
-                ),
-                const SizedBox(height: 12),
-
-                _buildFormFieldLabel('Nomor Telepon'),
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
-                  decoration: const InputDecoration(hintText: '08xxxxxxxxxx'),
-                ),
-                const SizedBox(height: 12),
-
-                _buildFormFieldLabel('Nomor Identitas (NIK KTP)'),
-                TextFormField(
-                  controller: _nikController,
-                  keyboardType: TextInputType.number,
-                  validator: (val) =>
-                      val == null || val.length < 10 ? 'Masukkan nomor identitas yang valid' : null,
-                  decoration: const InputDecoration(hintText: 'Masukkan 16 digit NIK KTP'),
-                ),
-              ],
-            ),
+        // Metode Pembayaran Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderDefault),
+            boxShadow: AppShadows.cardShadow,
           ),
-          const SizedBox(height: 20),
-
-          // Price Details Card
-          Text(
-            'Rincian Biaya',
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderDefault),
-            ),
-            child: Column(
-              children: [
-                _buildPriceRow('Subtotal Tiket', _apiSubTotal),
-                const SizedBox(height: 8),
-                _buildPriceRow('PPN (11%)', _apiTaxAmount),
-                const SizedBox(height: 8),
-                _buildPriceRow('Biaya Admin', _apiAdminFee),
-                const SizedBox(height: 8),
-                _buildPriceRow('Biaya Platform', _apiPlatformFee),
-                const Divider(height: 20, color: AppColors.borderDefault),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total Bayar',
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      _formatCurrency(_apiGrandTotal),
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.bluePrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Selected Payment Method Detail Box
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderDefault),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.payment_outlined, color: AppColors.bluePrimary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Metode Pembayaran',
-                        style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        _selectedMethodName ?? 'Pilih Metode Pembayaran',
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-
-          // Actions
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _startOrderOnServer,
-              child: const Text('Lanjut'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _currentStep = 2;
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: const BorderSide(color: AppColors.borderDefault, width: 1.5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Metode Pembayaran',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black),
               ),
-              child: const Text('Batal'),
+              const SizedBox(height: 8),
+              Text(
+                _selectedMethodName ?? 'Pilih Metode Pembayaran',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.bluePrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // Actions
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _startOrderOnServer,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.bluePrimary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'Lanjut',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton(
+            onPressed: () {
+              setState(() {
+                _currentStep = 3;
+              });
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.black,
+              side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'Kembali',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildFormFieldLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6.0, top: 4.0),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+  Widget _buildConfirmDetailRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
         ),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatIndonesianDate(DateTime dateTime) {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    
+    final dayName = days[dateTime.weekday % 7];
+    final day = dateTime.day;
+    final monthName = months[dateTime.month - 1];
+    final year = dateTime.year;
+    
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    
+    return '$dayName, $day $monthName $year ($hour:$minute WIB)';
+  }
+
+  Widget _buildRichInstructionText(String text) {
+    final List<TextSpan> spans = [];
+    final RegExp regExp = RegExp(r'\*\*(.*?)\*\*');
+    int lastIndex = 0;
+    
+    for (final Match match in regExp.allMatches(text)) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.black,
+            height: 1.4,
+          ),
+        ));
+      }
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+          height: 1.4,
+        ),
+      ));
+      lastIndex = match.end;
+    }
+    
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          color: Colors.black,
+          height: 1.4,
+        ),
+      ));
+    }
+    
+    return RichText(
+      text: TextSpan(children: spans),
     );
   }
 
@@ -1501,72 +2011,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // STEP 4: Detail Tagihan
+  // STEP 5: Detail Tagihan / Halaman Bayar
   // ─────────────────────────────────────────────
   Widget _buildBillDetailStep() {
     final va = _getVirtualAccountNumber();
     final grandTotal = _createdGrandTotal ?? _apiGrandTotal;
     final instructions = _getPaymentInstructions();
+    final expiresAt = _expiresAt ?? DateTime.now().add(const Duration(minutes: 15));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sisa waktu notice
+        // Main unified card
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderDefault),
-            boxShadow: AppShadows.cardShadow,
-          ),
-          child: Column(
-            children: [
-              Text(
-                'Masih ada waktu untuk menyelesaikan pembayaran',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Big Clock Icon Timer
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.access_time, color: AppColors.bluePrimary, size: 36),
-                  const SizedBox(width: 12),
-                  Text(
-                    _formatTimerText(_secondsRemaining),
-                    style: GoogleFonts.poppins(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Batas waktu untuk melakukan pembayaran adalah 15 menit dari pembuatan pesanan. Jika melewati batas waktu, pesanan Anda akan dibatalkan otomatis.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Payment Details Box matching mockup
-        Container(
-          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -1576,200 +2034,400 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo + Name
-              Row(
+              // 1. Poster Image with overlay
+              Stack(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 20,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(4),
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
-                    child: Text(
-                      (_selectedMethodCode ?? 'VA').toUpperCase(),
-                      style: GoogleFonts.poppins(
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                        color: _getBrandColor(),
+                    child: widget.event.posterImage != null && widget.event.posterImage!.isNotEmpty
+                        ? Image.network(
+                            widget.event.posterImage!,
+                            width: double.infinity,
+                            height: 180,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 180,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                            ),
+                          )
+                        : Container(
+                            height: 180,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                          ),
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.8),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _selectedMethodName ?? 'Virtual Account',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 24, color: AppColors.borderDefault),
-
-              // Nomor VA
-              Text(
-                'Nomor Virtual Account',
-                style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    va,
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => _copyToClipboard(va),
-                    child: Row(
+                  Positioned(
+                    bottom: 12,
+                    left: 16,
+                    right: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.copy, size: 14, color: AppColors.bluePrimary),
-                        const SizedBox(width: 4),
                         Text(
-                          'Salin',
+                          widget.event.name,
                           style: GoogleFonts.poppins(
-                            fontSize: 11,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.bluePrimary,
+                            color: Colors.white,
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, color: Colors.white, size: 12),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                widget.event.venue,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const Divider(height: 24, color: AppColors.borderDefault),
-
-              // Total Pembayaran
-              Text(
-                'Total Pembayaran',
-                style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _formatCurrency(grandTotal),
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.bluePrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Detail Pesanan Box
-        Text(
-          'Detail Pesanan',
-          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderDefault),
-          ),
-          child: Column(
-            children: [
-              _buildDetailRow('Order ID', _createdTrxId ?? ''),
-              const SizedBox(height: 8),
-              _buildDetailRow('Tanggal Event', '${widget.event.date} - ${widget.event.time}'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Payment Instructions Accordion
-        Text(
-          'Instruksi Pembayaran',
-          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderDefault),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: instructions.asMap().entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Row(
+              
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${entry.key + 1}. ',
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
+                    // 2. Timer Section
+                    Center(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(
+                            'Masih ada waktu untuk menyelesaikan pembayaran',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.access_time, color: AppColors.bluePrimary, size: 24),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatTimerText(_secondsRemaining),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.bluePrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Batas waktu untuk melakukan pembayaran',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatIndonesianDate(expiresAt),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Jika melewati batas waktu, pesanan Anda akan dibatalkan otomatis.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Expanded(
-                      child: Text(
-                        entry.value,
-                        style: GoogleFonts.poppins(fontSize: 12, height: 1.4),
+                    
+                    const Divider(height: 24, color: AppColors.borderDefault),
+                    
+                    // 3. Payment Details Box (border box inside)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Metode Pembayaran',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              // Logo image or fallback
+                              Container(
+                                width: 44,
+                                height: 28,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.grey[200]!, width: 0.8),
+                                ),
+                                child: _selectedMethodLogo != null && _selectedMethodLogo!.isNotEmpty && !_selectedMethodLogo!.endsWith('.svg')
+                                    ? Image.network(
+                                        _selectedMethodLogo!,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            _buildPaymentLogoFallback(_selectedMethodCode ?? '', _selectedMethodName ?? ''),
+                                      )
+                                    : _buildPaymentLogoFallback(_selectedMethodCode ?? '', _selectedMethodName ?? ''),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Nomor Virtual Account',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                va,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _copyToClipboard(va),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.copy, size: 14, color: AppColors.bluePrimary),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Salin',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.bluePrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24, color: AppColors.borderDefault),
+                          Text(
+                            'Total Pembayaran',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatCurrency(grandTotal),
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.bluePrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // 4. Detail Pesanan Section
+                    Text(
+                      'Detail Pesanan',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow('Order ID', _createdTrxId ?? ''),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(
+                      'Tanggal Event',
+                      '${widget.event.date} • ${widget.event.time.isNotEmpty ? widget.event.time : "19.00 - 21.00 WIB"}',
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // 5. Actions Buttons (Konfirmasi Pembayaran & Batalkan Pesanan)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _showConfirmPaymentDialog,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.bluePrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          'Konfirmasi Pembayaran',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: const Text('Batalkan Pesanan?'),
+                              content: const Text('Apakah Anda yakin ingin membatalkan pesanan ini?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Tidak'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _cancelOrderOnServer();
+                                  },
+                                  child: const Text('Ya, Batalkan'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.black,
+                          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          'Batalkan Pesanan',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 28),
-
-        // Actions
-        SizedBox(
+        
+        const SizedBox(height: 20),
+        
+        // Second card: Instructions
+        Container(
           width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _showConfirmPaymentDialog,
-            child: const Text('Konfirmasi Pembayaran'),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderDefault),
+            boxShadow: AppShadows.cardShadow,
           ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: OutlinedButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Text('Batalkan Pesanan?'),
-                  content: const Text('Apakah Anda yakin ingin membatalkan pesanan ini?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Tidak'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _cancelOrderOnServer();
-                      },
-                      child: const Text('Ya, Batalkan'),
-                    ),
-                  ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Intruksi Pembayaran',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red,
-              side: const BorderSide(color: Colors.red, width: 1.5),
-            ),
-            child: const Text('Batalkan Pesanan'),
+              ),
+              const SizedBox(height: 12),
+              ...instructions.asMap().entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${entry.key + 1}. ',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildRichInstructionText(entry.value),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
           ),
         ),
       ],
