@@ -9,15 +9,19 @@ class ApiService {
   static final http.Client _client = http.Client();
 
   // Helper untuk normalisasi URL poster_image dari API.
-  // Jika baseURL mengandung localhost, dan kita di Android emulator (10.0.2.2),
-  // kita perlu me-replace http://localhost:8080 dengan http://10.0.2.2:8080
+  // Mengubah localhost:8080 secara dinamis ke host & port aktif dari ApiConstants.baseUrl
   static String normalizeImageUrl(String? rawUrl) {
     if (rawUrl == null || rawUrl.isEmpty) return '';
-    if (ApiConstants.baseUrl.contains('10.0.2.2') && rawUrl.contains('localhost:8080')) {
-      return rawUrl.replaceAll('localhost:8080', '10.0.2.2:8080');
-    }
+    try {
+      final baseUri = Uri.parse(ApiConstants.baseUrl);
+      final activeAuthority = baseUri.authority; // e.g. "10.0.2.2:8080", "192.168.1.50:8080", "localhost:8080"
+      if (rawUrl.contains('localhost:8080')) {
+        return rawUrl.replaceAll('localhost:8080', activeAuthority);
+      }
+    } catch (_) {}
     return rawUrl;
   }
+
 
   // Fetch Featured Events -> Hero Banner
   static Future<List<HeroBannerItem>> fetchFeaturedEvents() async {

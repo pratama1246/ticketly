@@ -37,7 +37,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // Step 2: Metode Pembayaran
   List<Map<String, dynamic>> _paymentMethods = [];
-  bool _isLoadingMethods = true;
   String? _selectedMethodCode;
   String? _selectedMethodName;
   String? _selectedMethodType;
@@ -232,7 +231,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           if (mounted) {
             setState(() {
               _paymentMethods = flattened;
-              _isLoadingMethods = false;
               if (_paymentMethods.isNotEmpty) {
                 _selectPaymentMethod(_paymentMethods.first);
               }
@@ -258,7 +256,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           {'name': 'Allo Bank', 'code': 'allobank', 'type': 'other'},
           {'name': 'Akulaku PayLater', 'code': 'akulaku', 'type': 'other'},
         ];
-        _isLoadingMethods = false;
         _selectPaymentMethod(_paymentMethods.first);
       });
     }
