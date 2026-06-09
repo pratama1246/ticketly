@@ -2,22 +2,30 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "ticketly (Web HTML Renderer)",
+      "name": "ticketly - Chrome (HTML Renderer) ← PAKAI INI",
       "request": "launch",
       "type": "dart",
+      "deviceId": "chrome",
       "args": [
         "--web-renderer",
         "html"
       ]
     },
     {
-      "name": "ticketly (Web Disable Security)",
+      "name": "ticketly - Chrome (Disable Web Security)",
       "request": "launch",
       "type": "dart",
+      "deviceId": "chrome",
       "args": [
         "--web-browser-flag",
         "--disable-web-security"
       ]
+    },
+    {
+      "name": "ticketly - Android Emulator",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "emulator"
     }
   ]
 }
