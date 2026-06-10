@@ -162,17 +162,41 @@ class TicketTypeModel {
 
   static List<String> _parseHtmlToList(String html) {
     if (html.isEmpty) return [];
-    // Unescape &amp; to &
-    String clean = html.replaceAll('&amp;', '&');
-    // Remove <ul> and </ul> tags
-    clean = clean.replaceAll(RegExp(r'<\/?ul>'), '');
-    // Split by <li>
-    final List<String> rawParts = clean.split(RegExp(r'<li>'));
+
+    // Unescape common HTML entities
+    String clean = html
+        .replaceAll('&amp;', '&')
+        .replaceAll('&copy;', '©')
+        .replaceAll('&rsquo;', "'")
+        .replaceAll('&ldquo;', '"')
+        .replaceAll('&rdquo;', '"')
+        .replaceAll('&ndash;', '–')
+        .replaceAll('&mdash;', '—');
+
     final List<String> bullets = [];
-    for (final part in rawParts) {
-      final item = part.replaceAll(RegExp(r'<\/li>'), '').replaceAll(RegExp(r'\r\n|\n'), ' ').trim();
-      if (item.isNotEmpty) {
-        bullets.add(item);
+    if (clean.toLowerCase().contains('<li>')) {
+      // Remove <ul> and </ul>
+      clean = clean.replaceAll(RegExp(r'<\/?ul>', caseSensitive: false), '');
+      final List<String> rawParts = clean.split(RegExp(r'<li>', caseSensitive: false));
+      for (final part in rawParts) {
+        final item = part.replaceAll(RegExp(r'<\/li>', caseSensitive: false), '').replaceAll(RegExp(r'\r\n|\n'), ' ').trim();
+        if (item.isNotEmpty) {
+          bullets.add(item);
+        }
+      }
+    } else {
+      // Split by <p>, <div>, or <br> to make bullet points if <li> is not present
+      String replaced = clean
+          .replaceAll(RegExp(r'<\/?p[^>]*>', caseSensitive: false), '|SPLIT|')
+          .replaceAll(RegExp(r'<\/?div[^>]*>', caseSensitive: false), '|SPLIT|')
+          .replaceAll(RegExp(r'<br\s*\/?>', caseSensitive: false), '|SPLIT|');
+
+      final List<String> rawParts = replaced.split('|SPLIT|');
+      for (final part in rawParts) {
+        final item = part.replaceAll(RegExp(r'\r\n|\n'), ' ').trim();
+        if (item.isNotEmpty) {
+          bullets.add(item);
+        }
       }
     }
     return bullets;

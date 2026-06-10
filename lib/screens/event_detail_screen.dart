@@ -457,34 +457,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return widgets;
   }
 
-  TextSpan _parseInlineTags(String text, TextStyle style) {
-    // Strip all tags EXCEPT strong and b tags (e.g. clean up span, em, a, etc.)
-    final cleanText = text.replaceAll(RegExp(r'<(?!/?(strong|b)\b)[^>]*>', caseSensitive: false), '');
-
-    final regExp = RegExp(r'<(strong|b)>(.*?)<\/\1>', caseSensitive: false);
-    final List<TextSpan> children = [];
-    int lastEnd = 0;
-
-    final matches = regExp.allMatches(cleanText);
-    for (final match in matches) {
-      if (match.start > lastEnd) {
-        children.add(TextSpan(text: cleanText.substring(lastEnd, match.start)));
-      }
-      final content = match.group(2) ?? '';
-      children.add(TextSpan(
-        text: content,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ));
-      lastEnd = match.end;
-    }
-
-    if (lastEnd < cleanText.length) {
-      children.add(TextSpan(text: cleanText.substring(lastEnd)));
-    }
-
-    return TextSpan(style: style, children: children);
-  }
-
   // ─────────────────────────────────────────────
   // Ticket Selection View Content
   // ─────────────────────────────────────────────
@@ -797,13 +769,15 @@ class _TicketCard extends StatelessWidget {
                               ),
                             ),
                             Expanded(
-                              child: Text(
-                                desc,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.textPrimary,
-                                  height: 1.4,
+                              child: RichText(
+                                text: _parseInlineTags(
+                                  desc,
+                                  GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textPrimary,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                             ),
@@ -930,6 +904,35 @@ class _TicketCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// Helper to parse inline HTML tags like <strong> or <b>
+TextSpan _parseInlineTags(String text, TextStyle style) {
+  // Strip all tags EXCEPT strong and b tags (e.g. clean up span, em, a, etc.)
+  final cleanText = text.replaceAll(RegExp(r'<(?!/?(strong|b)\b)[^>]*>', caseSensitive: false), '');
+
+  final regExp = RegExp(r'<(strong|b)>(.*?)<\/\1>', caseSensitive: false);
+  final List<TextSpan> children = [];
+  int lastEnd = 0;
+
+  final matches = regExp.allMatches(cleanText);
+  for (final match in matches) {
+    if (match.start > lastEnd) {
+      children.add(TextSpan(text: cleanText.substring(lastEnd, match.start)));
+    }
+    final content = match.group(2) ?? '';
+    children.add(TextSpan(
+      text: content,
+      style: const TextStyle(fontWeight: FontWeight.bold),
+    ));
+    lastEnd = match.end;
+  }
+
+  if (lastEnd < cleanText.length) {
+    children.add(TextSpan(text: cleanText.substring(lastEnd)));
+  }
+
+  return TextSpan(style: style, children: children);
 }
 
 // ─────────────────────────────────────────────
