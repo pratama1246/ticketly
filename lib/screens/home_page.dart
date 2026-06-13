@@ -63,19 +63,14 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadAllData() async {
     setState(() => _isLoading = true);
     try {
-      final results = await Future.wait([
-        ApiService.fetchFeaturedEvents(),
-        ApiService.fetchEventsByCategory('concert'),
-        ApiService.fetchEventsByCategory('festival'),
-        ApiService.fetchEventsByCategory('event'),
-      ]);
+      final landingData = await ApiService.fetchLandingPageData();
 
       if (mounted) {
         setState(() {
-          _heroBanners = results[0] as List<HeroBannerItem>;
-          _concertEvents = results[1] as List<EventModel>;
-          _festivalEvents = results[2] as List<EventModel>;
-          _otherEvents = results[3] as List<EventModel>;
+          _heroBanners = landingData.featured;
+          _concertEvents = landingData.concerts;
+          _festivalEvents = landingData.festivals;
+          _otherEvents = landingData.events;
           _isLoading = false;
         });
 

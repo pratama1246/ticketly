@@ -40,6 +40,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   EventDetailModel? _event;
   bool _isLoading = true;
   String? _errorMessage;
+  final ScrollController _scrollController = ScrollController();
 
   // Local navigation state to switch between info and ticket selection
   bool _isTicketSelectionMode = false;
@@ -85,9 +86,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       setState(() {
         _isTicketSelectionMode = false;
       });
+      _scrollToTop();
     } else {
       Navigator.pop(context);
     }
+  }
+
+  void _scrollToTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // Calculate total amount
@@ -130,6 +147,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           setState(() {
             _isTicketSelectionMode = false;
           });
+          _scrollToTop();
           return false;
         }
         return true;
@@ -196,6 +214,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final event = _event!;
 
     return SingleChildScrollView(
+      controller: _scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -241,21 +260,24 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   Widget _buildPoster(String? url) {
-    return Container(
-      height: 220,
-      width: double.infinity,
-      color: Colors.grey[300],
-      child: url != null && url.isNotEmpty
-          ? Image.network(
-              url,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const Center(
-                child: Icon(Icons.broken_image_outlined, size: 64, color: AppColors.textHint),
+    return GestureDetector(
+      onTap: () => _showZoomableImage(context, url),
+      child: Container(
+        height: 220,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: url != null && url.isNotEmpty
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Icon(Icons.broken_image_outlined, size: 64, color: AppColors.textHint),
+                ),
+              )
+            : const Center(
+                child: Icon(Icons.image_outlined, size: 64, color: AppColors.textHint),
               ),
-            )
-          : const Center(
-              child: Icon(Icons.image_outlined, size: 64, color: AppColors.textHint),
-            ),
+      ),
     );
   }
 
@@ -291,12 +313,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         label = 'Berakhir';
         break;
       case 'sold_out':
-        bgColor = AppColors.error.withOpacity(0.1);
+        bgColor = AppColors.error.withValues(alpha: 0.1);
         textColor = AppColors.error;
         label = 'Habis Terjual';
         break;
       case 'almost_sold':
-        bgColor = AppColors.warning.withOpacity(0.1);
+        bgColor = AppColors.warning.withValues(alpha: 0.1);
         textColor = AppColors.warning;
         label = 'Hampir Habis';
         break;
@@ -350,19 +372,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               style: AppTextStyles.sectionHeadingStyle,
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF121212), // Dark background for contrast
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: AppColors.borderDefault, width: 1.5),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.card - 4),
-                child: Image.network(
-                  event.seatmapImage!,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+            GestureDetector(
+              onTap: () => _showZoomableImage(context, event.seatmapImage),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF121212), // Dark background for contrast
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: AppColors.borderDefault, width: 1.5),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.card - 4),
+                  child: Image.network(
+                    event.seatmapImage!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                  ),
                 ),
               ),
             ),
@@ -519,6 +544,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         setState(() {
                           _isTicketSelectionMode = true;
                         });
+                        _scrollToTop();
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -668,6 +694,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       );
     }
   }
+
+  void _showZoomableImage(BuildContext context, String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.9),
+      builder: (context) => _ZoomableImageDialog(imageUrl: imageUrl),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -731,7 +766,7 @@ class _TicketCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(AppRadius.badge),
                   ),
                   child: Text(
@@ -938,3 +973,70 @@ TextSpan _parseInlineTags(String text, TextStyle style) {
 // ─────────────────────────────────────────────
 // End of file
 // ─────────────────────────────────────────────
+
+class _ZoomableImageDialog extends StatefulWidget {
+  final String imageUrl;
+  const _ZoomableImageDialog({required this.imageUrl});
+
+  @override
+  State<_ZoomableImageDialog> createState() => _ZoomableImageDialogState();
+}
+
+class _ZoomableImageDialogState extends State<_ZoomableImageDialog> {
+  final TransformationController _transformationController = TransformationController();
+  TapDownDetails? _doubleTapDetails;
+
+  void _handleDoubleTap() {
+    if (_transformationController.value != Matrix4.identity()) {
+      _transformationController.value = Matrix4.identity();
+    } else {
+      final position = _doubleTapDetails!.localPosition;
+      _transformationController.value = Matrix4.identity()
+        ..translate(-position.dx, -position.dy)
+        ..scale(2.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onDoubleTapDown: (details) => _doubleTapDetails = details,
+              onDoubleTap: _handleDoubleTap,
+              child: InteractiveViewer(
+                transformationController: _transformationController,
+                minScale: 1.0,
+                maxScale: 4.0,
+                child: Center(
+                  child: Image.network(
+                    widget.imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Center(
+                      child: Icon(Icons.broken_image_outlined, size: 64, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            right: 16,
+            child: CircleAvatar(
+              backgroundColor: Colors.black.withOpacity(0.5),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

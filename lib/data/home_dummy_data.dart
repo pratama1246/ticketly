@@ -6,7 +6,7 @@ import '../models/event_model.dart';
 // ─────────────────────────────────────────────
 
 class HomeDummyData {
-  static const List<EventModel> concertEvents = [
+  static final List<EventModel> concertEvents = [
     EventModel(
       id: '1',
       slug: 'nct-dream-the-dream-show-4-world-tour',
@@ -15,6 +15,7 @@ class HomeDummyData {
       date: '15 Januari 2026',
       time: '19.00 WIB',
       imageUrl: 'assets/images/placeholder_event.png',
+      eventDate: DateTime(2026, 1, 15),
     ),
     EventModel(
       id: '2',
@@ -24,10 +25,11 @@ class HomeDummyData {
       date: '16 Januari 2026',
       time: '19.00 WIB',
       imageUrl: 'assets/images/placeholder_event.png',
+      eventDate: DateTime(2026, 1, 16),
     ),
   ];
 
-  static const List<EventModel> festivalEvents = [
+  static final List<EventModel> festivalEvents = [
     EventModel(
       id: '3',
       slug: 'p-land-season-of-wishes',
@@ -36,6 +38,7 @@ class HomeDummyData {
       date: '12 Des 2025',
       time: '10.00 WIB',
       imageUrl: 'assets/images/placeholder_event.png',
+      eventDate: DateTime(2025, 12, 12),
     ),
     EventModel(
       id: '4',
@@ -45,10 +48,11 @@ class HomeDummyData {
       date: '13 Des 2025',
       time: '10.00 WIB',
       imageUrl: 'assets/images/placeholder_event.png',
+      eventDate: DateTime(2025, 12, 13),
     ),
   ];
 
-  static const List<EventModel> otherEvents = [
+  static final List<EventModel> otherEvents = [
     EventModel(
       id: '5',
       slug: 'law-fellas',
@@ -57,6 +61,7 @@ class HomeDummyData {
       date: '20 Nov 2025',
       time: '15.00 WIB',
       imageUrl: 'assets/images/placeholder_event.png',
+      eventDate: DateTime(2025, 11, 20),
     ),
     EventModel(
       id: '6',
@@ -66,6 +71,7 @@ class HomeDummyData {
       date: '21 Nov 2025',
       time: '15.00 WIB',
       imageUrl: 'assets/images/placeholder_event.png',
+      eventDate: DateTime(2025, 11, 21),
     ),
   ];
 

@@ -31,6 +31,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   int _currentStep = 1; // Step 1: S&K, 2: Data Diri, 3: Metode Pembayaran, 4: Konfirmasi, 5: Detail Tagihan
   bool _isLoading = false;
+  final ScrollController _scrollController = ScrollController();
 
   // Step 1: Syarat & Ketentuan
   bool _isTnCAccepted = false;
@@ -88,6 +89,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void dispose() {
     _checkoutTimer?.cancel();
     _countdownTimer?.cancel();
+    _scrollController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
@@ -95,6 +97,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _nikController.dispose();
     _dobController.dispose();
     super.dispose();
+  }
+
+  void _scrollToTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+    });
   }
 
   void _startCheckoutTimer() {
@@ -195,15 +206,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _loadUserInfo() async {
     final user = await AuthService.getUser();
     if (user != null && mounted) {
-      final String fullName = user['username'] ?? '';
-      final List<String> parts = fullName.split(' ');
       setState(() {
-        if (parts.isNotEmpty) {
-          _firstNameController.text = parts[0];
-          if (parts.length > 1) {
-            _lastNameController.text = parts.sublist(1).join(' ');
-          }
-        }
+        _firstNameController.text = '';
+        _lastNameController.text = '';
         _emailController.text = user['email'] ?? '';
       });
     }
@@ -401,6 +406,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           _currentStep = 5;
           _isLoading = false;
         });
+        _scrollToTop();
         _startPaymentTimer(parsedExpiresAt);
       } else {
         setState(() => _isLoading = false);
@@ -860,6 +866,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   _checkoutTimer?.cancel();
                 }
               });
+              _scrollToTop();
             } else if (_currentStep == 5) {
               // Confirm canceling order if they try to leave VA step
               showDialog(
@@ -898,6 +905,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: _isLoadingCalculation
                     ? const Center(child: CircularProgressIndicator(color: AppColors.bluePrimary))
                     : SingleChildScrollView(
+                        controller: _scrollController,
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -924,7 +932,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -958,7 +966,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: const Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.bluePrimary),
@@ -1075,6 +1083,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       _currentStep = 2;
                       _startCheckoutTimer();
                     });
+                    _scrollToTop();
                   }
                 : null,
             style: ElevatedButton.styleFrom(
@@ -1109,6 +1118,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             validator: (val) => val == null || val.trim().isEmpty ? 'Nama depan wajib diisi' : null,
             decoration: _buildInputDecoration('Masukkan nama depan'),
             style: GoogleFonts.poppins(fontSize: 14),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-.]+")),
+              LengthLimitingTextInputFormatter(100),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -1117,6 +1130,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             controller: _lastNameController,
             decoration: _buildInputDecoration('Masukkan nama belakang'),
             style: GoogleFonts.poppins(fontSize: 14),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-.]+")),
+              LengthLimitingTextInputFormatter(100),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -1124,10 +1141,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            validator: (val) =>
-                val == null || !val.contains('@') ? 'Masukkan email yang valid' : null,
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) return 'Email wajib diisi';
+              if (!RegExp(r'^[\w\-.]+@([\w\-]+\.)+[\w\-]{2,}$').hasMatch(val.trim())) {
+                return 'Masukkan email yang valid';
+              }
+              return null;
+            },
             decoration: _buildInputDecoration('nama@domain.com'),
             style: GoogleFonts.poppins(fontSize: 14),
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(255),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -1138,6 +1163,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             validator: (val) => val == null || val.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
             decoration: _buildInputDecoration('08xxxxxxxxxx'),
             style: GoogleFonts.poppins(fontSize: 14),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s()]')),
+              LengthLimitingTextInputFormatter(20),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -1149,6 +1178,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 val == null || val.trim().isEmpty ? 'Nomor identitas wajib diisi' : null,
             decoration: _buildInputDecoration('Masukkan nomor identitas'),
             style: GoogleFonts.poppins(fontSize: 14),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+              LengthLimitingTextInputFormatter(20),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -1293,6 +1326,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         setState(() {
                           _currentStep = 3;
                         });
+                        _scrollToTop();
                       }
                     }
                   : null,
@@ -1471,6 +1505,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     setState(() {
                       _currentStep = 4;
                     });
+                    _scrollToTop();
                   }
                 : null,
             style: ElevatedButton.styleFrom(
@@ -1496,6 +1531,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               setState(() {
                 _currentStep = 2;
               });
+              _scrollToTop();
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.black,
@@ -1881,6 +1917,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               setState(() {
                 _currentStep = 3;
               });
+              _scrollToTop();
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.black,
@@ -2069,7 +2106,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.8),
+                            Colors.black.withValues(alpha: 0.8),
                           ],
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../service/auth_service.dart';
@@ -147,6 +148,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   style: GoogleFonts.poppins(fontSize: 14),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(255),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
@@ -200,6 +204,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   style: GoogleFonts.poppins(fontSize: 14),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(128),
+                  ],
                 ),
                 const SizedBox(height: 32),
 

@@ -142,7 +142,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                     style: GoogleFonts.poppins(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w400,
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(alpha: 0.9),
                                     ),
                                   ),
                                   const SizedBox(height: 20), // visual spacing for arc curve height
@@ -160,7 +160,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               children: [
                                 _MenuCard(
                                   icon: Icons.edit_outlined,
-                                  title: 'Edit Name Profil',
+                                  title: 'Edit Nama Profil',
                                   iconColor: const Color(0xFFFBBF24),
                                   iconBgColor: const Color(0xFFFEF3C7),
                                   textColor: AppColors.textPrimary,
@@ -320,7 +320,7 @@ class _MenuCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
@@ -290,6 +291,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 fontSize: 14,
                 color: AppColors.textPrimary,
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s'\-.]+")),
+                LengthLimitingTextInputFormatter(30),
+              ],
             ),
             const SizedBox(height: 24),
 
@@ -330,6 +335,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 fontSize: 14,
                 color: AppColors.textPrimary,
               ),
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(255),
+              ],
             ),
             const SizedBox(height: 32),
 

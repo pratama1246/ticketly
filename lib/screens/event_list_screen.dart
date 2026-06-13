@@ -18,6 +18,25 @@ class EventListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    
+    int crossAxisCount = 2;
+    double childAspectRatio = 0.66;
+
+    if (screenWidth > 1024) {
+      crossAxisCount = 5;
+      childAspectRatio = 0.78;
+    } else if (screenWidth > 768) {
+      crossAxisCount = 4;
+      childAspectRatio = 0.74;
+    } else if (screenWidth > 480) {
+      crossAxisCount = 3;
+      childAspectRatio = 0.70;
+    } else if (screenWidth < 360) {
+      crossAxisCount = 2;
+      childAspectRatio = 0.62;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.screenBg,
       appBar: AppBar(
@@ -58,9 +77,9 @@ class EventListScreen extends StatelessWidget {
               vertical: 8.0,
             ),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.58, // Adjust to match new event card ratio
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: childAspectRatio,
                 crossAxisSpacing: 16.0,
                 mainAxisSpacing: 16.0,
               ),

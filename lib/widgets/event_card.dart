@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/event_model.dart';
 
@@ -40,6 +41,7 @@ class EventCard extends StatelessWidget {
               imageUrl: event.imageUrl,
               isSoldOut: event.isSoldOut,
               badge: event.badge,
+              eventDate: event.eventDate,
             ),
 
             // ── Event Info ──
@@ -91,50 +93,70 @@ class _EventCardImage extends StatelessWidget {
   final String imageUrl;
   final bool isSoldOut;
   final String? badge;
+  final DateTime? eventDate;
 
   const _EventCardImage({
     required this.imageUrl,
     required this.isSoldOut,
     this.badge,
+    this.eventDate,
   });
+
+  String _getMonthAbbreviation(DateTime date) {
+    const months = [
+      'JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN',
+      'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'
+    ];
+    if (date.month >= 1 && date.month <= 12) {
+      return months[date.month - 1];
+    }
+    return '';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Placeholder image — replace dengan Image.network / Image.asset saat ada real assets
-        Container(
-          height: 120,
-          width: double.infinity,
-          color: const Color(0xFFD1D5DB),
-          child: imageUrl.isNotEmpty
-              ? Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(Icons.broken_image_outlined, color: Color(0xFF9CA3AF), size: 32),
+        // Scaling image container via AspectRatio (16:9 video ratio to look modern and prevent overlap issues)
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Container(
+            width: double.infinity,
+            color: const Color(0xFFD1D5DB),
+            child: imageUrl.isNotEmpty
+                ? (imageUrl.startsWith('assets/')
+                    ? Image.asset(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Center(
+                          child: Icon(Icons.broken_image_outlined, color: Color(0xFF9CA3AF), size: 32),
+                        ),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        },
+                      ))
+                : const Center(
+                    child: Icon(Icons.image_outlined, color: Color(0xFF9CA3AF), size: 32),
                   ),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
-                  },
-                )
-              : const Center(
-                  child: Icon(Icons.image_outlined, color: Color(0xFF9CA3AF), size: 32),
-                ),
+          ),
         ),
 
         // Sold-out overlay
         if (isSoldOut)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -172,6 +194,51 @@ class _EventCardImage extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   fontSize: 10,
                 ),
+              ),
+            ),
+          ),
+
+        // Calendar Date Badge
+        if (eventDate != null && !isSoldOut)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _getMonthAbbreviation(eventDate!),
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFEF4444),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 9,
+                      height: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    eventDate!.day.toString(),
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

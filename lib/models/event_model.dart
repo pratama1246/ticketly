@@ -28,6 +28,7 @@ class EventModel {
   final String imageUrl;
   final String? badge;
   final bool isSoldOut;
+  final DateTime? eventDate;
 
   const EventModel({
     required this.id,
@@ -39,6 +40,7 @@ class EventModel {
     required this.imageUrl,
     this.badge,
     this.isSoldOut = false,
+    this.eventDate,
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -51,10 +53,11 @@ class EventModel {
     // Parse date & time
     String dateStr = '';
     String timeStr = '';
+    DateTime? parsedDate;
     try {
       final rawDate = json['event_date'];
       if (rawDate != null) {
-        final parsedDate = DateTime.parse(rawDate);
+        parsedDate = DateTime.parse(rawDate);
         dateStr = formatIndonesianDate(parsedDate);
         timeStr = formatIndonesianTime(parsedDate);
       }
@@ -75,6 +78,7 @@ class EventModel {
       imageUrl: posterImage,
       isSoldOut: isSoldOutStatus,
       badge: null, // Default null agar bersih di card list, atau sesuaikan jika perlu
+      eventDate: parsedDate,
     );
   }
 }

@@ -18,13 +18,15 @@ class HeroBanner extends StatefulWidget {
 }
 
 class _HeroBannerState extends State<HeroBanner> {
-  final PageController _pageController = PageController();
+  late PageController _pageController;
   int _currentPage = 0;
   Timer? _autoPlayTimer;
 
   @override
   void initState() {
     super.initState();
+    int initialPage = widget.items.isNotEmpty ? widget.items.length * 1000 : 0;
+    _pageController = PageController(initialPage: initialPage);
     _startAutoPlay();
   }
 
@@ -32,7 +34,7 @@ class _HeroBannerState extends State<HeroBanner> {
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (widget.items.isEmpty) return;
       if (!mounted) return;
-      final nextPage = (_currentPage + 1) % widget.items.length;
+      final nextPage = (_pageController.page?.round() ?? 0) + 1;
       _pageController.animateToPage(
         nextPage,
         duration: const Duration(milliseconds: 600),
@@ -57,12 +59,14 @@ class _HeroBannerState extends State<HeroBanner> {
           aspectRatio: 16 / 7,
           child: PageView.builder(
             controller: _pageController,
-            itemCount: widget.items.length,
             onPageChanged: (index) {
-              setState(() => _currentPage = index);
+              if (widget.items.isNotEmpty) {
+                setState(() => _currentPage = index % widget.items.length);
+              }
             },
             itemBuilder: (context, index) {
-              final item = widget.items[index];
+              if (widget.items.isEmpty) return const SizedBox.shrink();
+              final item = widget.items[index % widget.items.length];
               return _HeroBannerSlide(item: item);
             },
           ),

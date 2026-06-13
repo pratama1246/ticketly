@@ -23,5 +23,6 @@ class ApiConstants {
 
   // Endpoints
   static const String featuredEvents = '/api/events/featured';
+  static const String landingEvents = '/api/events/landing';
   static const String listEvents = '/api/events';
 }
