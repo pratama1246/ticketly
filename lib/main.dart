@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'screens/home_page.dart';
+import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -105,7 +105,7 @@ class TicketlyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomePage(),
+      home: const SplashScreen(),
     );
   }
 }
