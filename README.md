@@ -169,6 +169,21 @@ The mobile client consumes REST API endpoints from the **Ticketly Backend (CodeI
 
 > 🔒 **JWT Auth**: Endpoints marked with **JWT** require an `Authorization: Bearer <token>` header containing the saved JWT token.
 
+### 🔑 Default Testing Credentials
+
+To log in and test the application, ensure the CI4 backend seeders have been run and use these credentials:
+
+#### Administrator
+- **Email:** `admin@ticketly.com`
+- **Username:** `admin`
+- **Password:** `admin123`
+
+#### Mock Users (Customer)
+- `budi@example.com` / `password123` (username: `budi_santoso`)
+- `ani@example.com` / `password123` (username: `ani_wijaya`)
+- `dewi@example.com` / `password123` (username: `dewi_sari`)
+- `rudi@example.com` / `password123` (username: `rudi_hermawan`)
+
 ---
 
 ## How to Run
