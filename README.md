@@ -15,88 +15,88 @@ It connects to the **CodeIgniter 4 (PHP 8.1+) Backend RESTful API** to deliver a
 
 ---
 
-## Daftar Isi
+## Table of Contents
 
-- [Fitur Utama](#fitur-utama)
-- [Tech Stack & Dependensi](#tech-stack--dependensi)
-- [Persyaratan Sistem](#persyaratan-sistem)
-- [Struktur Folder Project](#struktur-folder-project)
-- [Konfigurasi & Setup Lokal](#konfigurasi--setup-lokal)
-- [Integrasi API CodeIgniter 4](#integrasi-api-codeigniter-4)
-- [Cara Menjalankan Aplikasi](#cara-menjalankan-aplikasi)
-- [Desain UI/UX](#desain-uiux)
-- [Tim Pengembang](#tim-pengembang)
-- [Lisensi](#lisensi)
+- [Key Features](#key-features)
+- [Tech Stack & Dependencies](#tech-stack--dependencies)
+- [Requirements](#requirements)
+- [Folder Structure](#folder-structure)
+- [Local Setup & Configuration](#local-setup--configuration)
+- [API Integration & Documentation (Scalar)](#api-integration--documentation-scalar)
+- [How to Run](#how-to-run)
+- [UI/UX Design](#uiux-design)
+- [Team](#team)
+- [License](#license)
 
 ---
 
-## Fitur Utama
+## Key Features
 
 ### 🔐 Authentication & Session
-- **Registrasi & Login**: Autentikasi stateless menggunakan custom JWT. Token disimpan secara lokal menggunakan `shared_preferences`.
-- **Manajemen Sesi**: Deteksi otomatis status login ketika aplikasi pertama kali dibuka.
-- **Logout**: Membersihkan token dan data pengguna dari penyimpanan lokal secara aman.
+- **Registration & Login**: Stateless authentication using a custom JWT. The token is stored locally using `shared_preferences`.
+- **Session Management**: Automatically detects login status when the application is opened.
+- **Logout**: Safely clears the local token and user details cache.
 
 ### 🎟️ Event Discovery
-- **Hero Banner / Featured Events**: Menampilkan event-event pilihan secara visual dan dinamis di bagian atas beranda.
-- **Kategori Event**: Menyaring event berdasarkan kategori seperti *Concert*, *Festival*, *Show*, dll.
-- **Pencarian & Detail Event**: Informasi lengkap mengenai deskripsi event, tanggal, lokasi, denah kursi (*seatmap*), serta daftar tipe tiket yang tersedia beserta sisa kuotanya secara real-time.
+- **Hero Banner / Featured Events**: Dynamically showcases selected events at the top of the homepage.
+- **Event Categories**: Filters events by category (e.g., *Concert*, *Festival*, *Show*, etc.).
+- **Search & Event Details**: Comprehensive details of the event, date, venue, seatmap, and ticket types with real-time remaining quota.
 
 ### 🛒 Checkout Flow
-- **Kalkulasi Keranjang**: Menghitung subtotal tiket secara real-time, biaya admin, serta grand total sebelum melakukan transaksi.
-- **Pemesanan Tiket (Start Checkout)**: Mengunci kuota tiket sementara selama proses pemesanan berlangsung.
-- **Konfirmasi Pembayaran**: Mengunggah bukti pembayaran untuk diverifikasi oleh admin.
-- **Pembatalan Pesanan**: Fitur membatalkan pesanan jika diperlukan atau jika batas waktu pembayaran habis.
+- **Cart Calculation**: Real-time calculation of ticket subtotal, admin fees, and grand total.
+- **Start Checkout**: Temporarily reserves and locks ticket quotas during checkout.
+- **Payment Confirmation**: Allows users to upload a proof of payment image to be verified by the admin.
+- **Cancel Booking**: Permits users to cancel an active booking or automatically expires unpaid bookings.
 
-### 🎫 Tiket Saya & Riwayat Transaksi
-- **Riwayat Pesanan**: Melihat daftar transaksi lama dengan status pembayaran (`pending`, `completed`, `cancelled`, `expired`).
-- **Detail E-Ticket**: Menampilkan tiket yang sudah berhasil dibeli lengkap dengan visualisasi barcode/QR Code mockup untuk keperluan check-in.
+### 🎫 My Tickets & Order History
+- **Order History**: Displays past transactions along with checkout/payment status (`pending`, `completed`, `cancelled`, `expired`).
+- **E-Ticket Details**: Displays successfully purchased tickets with barcode/QR code mockups for check-in validation.
 
 ---
 
-## Tech Stack & Dependensi
+## Tech Stack & Dependencies
 
 **Core Framework & Libraries**
 - **Flutter SDK**: `^3.11.0` (Dart `^3.x`)
-- **Google Fonts**: `^8.1.0` (Menggunakan font **Poppins** secara global)
-- **HTTP Client**: `http ^1.2.0` (Komunikasi stateless dengan CI4 REST API)
-- **Local Storage**: `shared_preferences ^2.2.0` (Penyimpanan token JWT & cache data user)
+- **Google Fonts**: `^8.1.0` (Using the **Poppins** font family globally)
+- **HTTP Client**: `http ^1.2.0` (For stateless communication with the CI4 REST API)
+- **Local Storage**: `shared_preferences ^2.2.0` (For caching JWT auth tokens & user profiles)
 
 ---
 
-## Persyaratan Sistem
+## Requirements
 
-Sebelum menjalankan aplikasi Ticketly Mobile di komputer Anda, pastikan telah memenuhi persyaratan berikut:
-- **Flutter SDK** versi `3.11.0` atau yang lebih baru.
-- **Android Studio** atau **Xcode** (untuk menjalankan emulator Android / iOS simulator).
-- **Ticketly Backend (CodeIgniter 4)** harus dalam keadaan berjalan secara lokal (`php spark serve`) atau hosted di server internet.
+Before running the Ticketly Mobile app, ensure that you meet the following requirements:
+- **Flutter SDK** version `3.11.0` or higher.
+- **Android Studio** (Android Emulator) or **Xcode** (iOS Simulator) installed and configured.
+- A running instance of the **Ticketly Backend (CodeIgniter 4)** (either locally via `php spark serve` or hosted).
 
 ---
 
-## Struktur Folder Project
+## Folder Structure
 
-Aplikasi ini mengikuti arsitektur modular yang bersih untuk memudahkan pemeliharaan kode:
+This application is built using a clean, modular structure for easy code maintenance:
 
 ```text
 lib/
-  ├── constants/    # Konfigurasi konstan (API endpoint, path)
-  ├── data/         # Mock data & data internal aplikasi
-  ├── extensions/   # Flutter & Dart extensions helper
-  ├── models/       # Model data mapping JSON dari API
-  ├── providers/    # State management helper (jika digunakan)
-  ├── screens/      # Semua halaman/UI utama (Splash, Onboarding, Home, Checkout, dll)
-  ├── service/      # Service layer untuk logic API (ApiService & AuthService)
-  ├── theme/        # Konfigurasi visual, warna, font, dan radius (AppTheme)
-  ├── utils/        # Helper utilitas (format tanggal, format rupiah, dll)
-  └── widgets/      # Reusable UI components (Custom Button, EventCard, HeroBanner)
+  ├── constants/    # App constants (API endpoints, asset paths)
+  ├── data/         # Mock data & internal application data
+  ├── extensions/   # Flutter & Dart extensions and helpers
+  ├── models/       # Data models mapped from JSON API responses
+  ├── providers/    # State management helpers (if applicable)
+  ├── screens/      # Main UI screens (Splash, Onboarding, Home, Checkout, etc.)
+  ├── service/      # Service layer for API & Auth logic (ApiService & AuthService)
+  ├── theme/        # App styling, color palettes, fonts, and borders (AppTheme)
+  ├── utils/        # Utility functions (date formatting, currency formatting, etc.)
+  └── widgets/      # Reusable UI components (Custom Buttons, EventCards, HeroBanner)
 ```
 
 ---
 
-## Konfigurasi & Setup Lokal
+## Local Setup & Configuration
 
-### 1. Clone & Ambil Dependensi
-Clone repository ini ke komputer Anda, lalu jalankan perintah flutter pub get untuk mengunduh semua package:
+### 1. Clone & Fetch Dependencies
+Clone the repository, navigate into the directory, and download dependencies:
 
 ```bash
 git clone https://github.com/pratama1246/ticketly.git
@@ -104,10 +104,10 @@ cd ticketly
 flutter pub get
 ```
 
-### 2. Konfigurasi Base URL API
-Untuk menghubungkan aplikasi Flutter dengan backend CodeIgniter 4, pastikan konfigurasi host di [api_constants.dart](file:///home/pputra/Documents/Project-Web/ticketly/lib/constants/api_constants.dart) sudah sesuai.
+### 2. Configure API Base URL
+To connect the Flutter application with the CodeIgniter 4 backend, check the configuration in [api_constants.dart](file:///home/pputra/Documents/Project-Web/ticketly/lib/constants/api_constants.dart).
 
-Aplikasi mendeteksi platform yang berjalan secara dinamis agar developer tidak perlu mengubah IP manual:
+The application dynamically detects the running platform so you do not have to manually edit the host IP address:
 
 ```dart
 // lib/constants/api_constants.dart
@@ -116,78 +116,84 @@ static String get baseUrl {
     return 'http://localhost:8080';
   }
   if (Platform.isAndroid) {
-    // 10.0.2.2 adalah alias IP khusus untuk mengakses localhost mesin host dari Android Emulator
+    // 10.0.2.2 is a special loopback address to reach localhost on the host machine from the Android emulator
     return 'http://10.0.2.2:8080'; 
   }
   return 'http://localhost:8080'; // iOS Emulator / Mac
 }
 ```
 
-*Pastikan backend CI4 Anda berjalan di port `8080` (default `php spark serve`). Jika Anda menggunakan port lain atau hosting online, silakan sesuaikan file tersebut.*
+*Ensure your CI4 backend is running on port `8080` (default for `php spark serve`). If you use a custom port or live production URL, adjust this file accordingly.*
 
 ---
 
-## Integrasi API CodeIgniter 4
+## API Integration & Documentation (Scalar)
 
-Aplikasi Flutter ini mengonsumsi REST API berikut secara dinamis:
+The mobile client consumes REST API endpoints from the **Ticketly Backend (CodeIgniter 4)**. To run this project fully, you need the backend server running.
 
-| Endpoint | Method | Keterangan | Auth |
+* **Backend CI4 Repository:** [ticketly-project](https://github.com/pratama1246/ticketly-project)
+* **Interactive API Docs (Scalar):** When the CI4 backend is running locally, you can view interactive API documentation, request/response schemas, try out endpoints, and generate client integration code (e.g. Dart/curl):
+  👉 **[http://localhost:8080/api/docs](http://localhost:8080/api/docs)**
+
+### API Endpoints Consumed:
+
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| `/api/auth/register` | `POST` | Pendaftaran akun baru | Public |
-| `/api/auth/login` | `POST` | Login & generate JWT token | Public |
-| `/api/auth/logout` | `POST` | Invalidasi sesi user | JWT |
-| `/api/events` | `GET` | Mengambil daftar event (paginated) | Public |
-| `/api/events/featured`| `GET` | Mengambil event unggulan (Hero Banner) | Public |
-| `/api/events/landing` | `GET` | Mengambil data homepage terpadu | Public |
-| `/api/events/{slug}` | `GET` | Detail event & tipe tiket | Public |
-| `/api/checkout/start` | `POST` | Memulai checkout & booking tiket | JWT |
-| `/api/checkout/confirm`| `POST` | Konfirmasi pembayaran (upload bukti) | JWT |
-| `/api/checkout/cancel`| `POST` | Batalkan pesanan aktif | JWT |
-| `/api/profile` | `GET` | Detail profil pengguna | JWT |
-| `/api/profile/update` | `POST` | Update biodata & foto profil | JWT |
-| `/api/orders` | `GET` | Riwayat transaksi tiket | JWT |
+| `POST` | `/api/auth/register` | Register a new user | Public |
+| `POST` | `/api/auth/login` | Login and receive custom JWT token | Public |
+| `POST` | `/api/auth/logout` | Terminate session and invalidate token | JWT |
+| `GET` | `/api/events` | Get paginated list of events | Public |
+| `GET` | `/api/events/featured` | Get featured events list for Hero Banner | Public |
+| `GET` | `/api/events/landing` | Get grouped events list for landing homepage | Public |
+| `GET` | `/api/events/{slug}` | Detailed event and ticket categories | Public |
+| `POST` | `/api/checkout/start` | Start checkout process and lock ticket quota | JWT |
+| `POST` | `/api/checkout/confirm` | Confirm booking by uploading proof of payment | JWT |
+| `POST` | `/api/checkout/cancel` | Cancel an active booking transaction | JWT |
+| `GET` | `/api/profile` | Get logged-in user profile details | JWT |
+| `POST` | `/api/profile/update` | Update user details and profile photo | JWT |
+| `GET` | `/api/orders` | User order history and status | JWT |
 
-> 🔒 **Auth JWT**: Endpoint bertanda **JWT** membutuhkan header `Authorization: Bearer <token>` yang diambil dari cache lokal.
+> 🔒 **JWT Auth**: Endpoints marked with **JWT** require an `Authorization: Bearer <token>` header containing the saved JWT token.
 
 ---
 
-## Cara Menjalankan Aplikasi
+## How to Run
 
-Jalankan perintah berikut pada terminal Anda untuk meluncurkan aplikasi ke emulator atau perangkat fisik yang terhubung:
+Run the following command in your terminal to launch the application on a connected device or emulator:
 
 ```bash
-# Cek perangkat yang terdeteksi
+# Check connected devices
 flutter devices
 
-# Jalankan aplikasi (pilih device jika ada beberapa yang terhubung)
+# Run the app (select target device if multiple are connected)
 flutter run
 ```
 
 ---
 
-## Desain UI/UX
+## UI/UX Design
 
-Ticketly dirancang dengan pendekatan *design-first* di Figma dengan panduan visual sebagai berikut:
-- **Warna Utama**: Cream/Soft Yellow sebagai background dasar (`0xFFFFFDE7`) untuk nuansa modern, dipadukan dengan **Blue Primary** (`0xFF072AC8`) sebagai warna aksi utama.
-- **Tipografi**: Menggunakan font **Poppins** dengan berbagai tingkatan berat (Medium, Semi-Bold, Bold) untuk mempermudah hirarki informasi bagi pengguna.
-- **Interaksi**: Efek transisi halus dan micro-animations pada tombol dan card untuk meningkatkan kenyamanan navigasi.
+Ticketly follows a design-first workflow using Figma with the following style guide:
+- **Primary Colors**: Cream/Soft Yellow (`0xFFFFFDE7`) for a clean and modern canvas, paired with **Blue Primary** (`0xFF072AC8`) for main interaction elements.
+- **Typography**: Uses the **Poppins** typeface with varying font weights (Medium, Semi-Bold, Bold) to create a clear informational hierarchy.
+- **Interactions**: Smooth screen transitions and micro-animations on interactive elements to improve navigation comfort.
 
 ---
 
-## Tim Pengembang
+## Team
 
 - **Hana**
 - **Tama**
 - **Jihan**
 
-Proyek ini dikembangkan sebagai tugas kuliah pada **Jurusan Teknik Informatika, Politeknik Negeri Cilacap**.
+This project was built as a college project at **Politeknik Negeri Cilacap**, Informatics Engineering Department.
 
-**Kelas**: Teknik Informatika 2D  
-**Mata Kuliah**: Pemrograman Web 2 (Integrasi Mobile)  
-**Institusi**: Politeknik Negeri Cilacap  
+**Class:** Teknik Informatika 2D  
+**Course:** Pemrograman Web 2 (Mobile Integration)  
+**Institution:** Politeknik Negeri Cilacap  
 
 ---
 
-## Lisensi
+## License
 
-Aplikasi ini dilisensikan di bawah [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
