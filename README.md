@@ -1,8 +1,10 @@
-# 🎟️ Ticketly Mobile (PNC)
+# 📱 Ticketly Mobile
 
-**Ticketly Mobile** is the cross-platform mobile client application built using **Flutter (Dart)** that integrates with the **CodeIgniter 4 (PHP 8.1+) RESTful API** to deliver a seamless event discovery and ticket purchasing experience.
+**Ticketly Mobile** is a cross-platform mobile application built using **Flutter (Dart)** that serves as the client interface for the **Ticketly** event ticketing system. 
 
-> Built as a college project at **Politeknik Negeri Cilacap**, Informatics Engineering Department.
+It connects to the **CodeIgniter 4 (PHP 8.1+) Backend RESTful API** to deliver a seamless event discovery and ticket purchasing experience on mobile devices.
+
+> This project is the mobile companion to the Ticketly event platform, built as a college project at **Politeknik Negeri Cilacap**, Informatics Engineering Department.
 
 ---
 
@@ -16,67 +18,67 @@
 ## Table of Contents
 
 - [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
+- [Tech Stack & Dependencies](#tech-stack--dependencies)
 - [Requirements](#requirements)
 - [Folder Structure](#folder-structure)
-- [Local Setup](#local-setup)
-- [REST API Endpoints](#rest-api-endpoints)
-- [Run the App](#run-the-app)
+- [Local Setup & Configuration](#local-setup--configuration)
+- [API Integration & Documentation (Scalar)](#api-integration--documentation-scalar)
+- [How to Run](#how-to-run)
 - [UI/UX Design](#uiux-design)
 - [Team](#team)
 - [License](#license)
-- [Disclaimer](#disclaimer)
 
 ---
 
 ## Key Features
 
-### Authentication & Profile
+### 🔐 Authentication & Session
+- **Registration & Login**: Stateless authentication using a custom JWT. The token is stored locally using `shared_preferences`.
+- **Password Recovery (OTP)**: Fully integrated flow to request and verify a 6-digit OTP code via email, allowing users to securely reset their password.
+- **Session Management**: Automatically detects login status when the application is opened.
+- **Logout**: Safely clears the local token and user details cache.
 
-- Custom registration for mobile users
-- Login & logout (securing custom JWT)
-- Forgot password request (OTP via email) & secure password reset
-- View and manage user transaction records
-- Stateless JWT authentication filter injection
+### 🎟️ Event Discovery
+- **Hero Banner / Featured Events**: Dynamically showcases selected events at the top of the homepage.
+- **Event Categories**: Filters events by category (e.g., *Concert*, *Festival*, *Show*, etc.).
+- **Search & Event Details**: Comprehensive details of the event, date, venue, seatmap, and ticket types with real-time remaining quota.
 
-### Mobile API (Flutter Integration)
+### 🛒 Checkout Flow
+- **Cart Calculation**: Real-time calculation of ticket subtotal, admin fees, and grand total.
+- **Start Checkout**: Temporarily reserves and locks ticket quotas during checkout.
+- **Payment Confirmation**: Allows users to upload a proof of payment image to be verified by the admin.
+- **Cancel Booking**: Permits users to cancel an active booking or automatically expires unpaid bookings.
 
-- Home banner/landing events & featured events
-- Event category filtering (Concerts, Festivals, Shows)
-- Detailed event information, ticket categories, & remaining ticket quota
-- Real-time shopping cart (cart) calculation
-- Booking transactions (start checkout, upload proof of payment/confirm, cancel booking)
-- Dynamic and clean webp event poster images
-- Pull-to-refresh list update mechanism
+### 🎟️ My Tickets & Order History
+- **Order History**: Displays past transactions along with checkout/payment status (`pending`, `completed`, `cancelled`, `expired`).
+- **E-Ticket Details**: Displays successfully purchased tickets with barcode/QR code mockups for check-in validation.
+- **Pull-to-Refresh & Posters**: Pull-to-refresh mechanism to reload tickets, displaying dynamic concert poster images from the backend.
 
 ---
 
-## Tech Stack
+## Tech Stack & Dependencies
 
-**Mobile Client**
-
-- Flutter SDK `^3.11.0` (Dart `^3.x`)
-- Google Fonts `^8.1.0` (Poppins font family globally)
-- HTTP Client: `http ^1.2.0` (for REST API requests)
-- Local Storage: `shared_preferences ^2.2.0` (for JWT & user session cache)
-- SVG Vector Rendering: `flutter_svg ^2.3.0` (for local vector graphics)
-
-**Backend Integration**
-
-- CodeIgniter Framework `^4.0` (PHP 8.1+)
-- Custom JWT Auth (`firebase/php-jwt`)
+**Core Framework & Libraries**
+- **Flutter SDK**: `^3.11.0` (Dart `^3.x`)
+- **Google Fonts**: `^8.1.0` (Using the **Poppins** font family globally)
+- **HTTP Client**: `http ^1.2.0` (For stateless communication with the CI4 REST API)
+- **Local Storage**: `shared_preferences ^2.2.0` (For caching JWT auth tokens & user profiles)
+- **SVG Vector Rendering**: `flutter_svg ^2.3.0` (For rendering local vector graphics offline)
 
 ---
 
 ## Requirements
 
-- Flutter SDK version **3.11.0** or higher
-- Android Studio (Android Emulator) or Xcode (iOS Simulator)
-- Running instance of the **Ticketly Backend (CodeIgniter 4)** (locally or hosted)
+Before running the Ticketly Mobile app, ensure that you meet the following requirements:
+- **Flutter SDK** version `3.11.0` or higher.
+- **Android Studio** (Android Emulator) or **Xcode** (iOS Simulator) installed and configured.
+- A running instance of the **Ticketly Backend (CodeIgniter 4)** (either locally via `php spark serve` or hosted).
 
 ---
 
 ## Folder Structure
+
+This application is built using a clean, modular structure for easy code maintenance:
 
 ```text
 lib/
@@ -84,6 +86,7 @@ lib/
   ├── data/         # Mock data & internal application data
   ├── extensions/   # Flutter & Dart extensions and helpers
   ├── models/       # Data models mapped from JSON API responses
+  ├── providers/    # State management helpers (if applicable)
   ├── screens/      # Main UI screens (Splash, Onboarding, Home, Checkout, etc.)
   ├── service/      # Service layer for API & Auth logic (ApiService & AuthService)
   ├── theme/        # App styling, color palettes, fonts, and borders (AppTheme)
@@ -93,64 +96,49 @@ lib/
 
 ---
 
-## Local Setup
+## Local Setup & Configuration
 
-### 1) Clone Repository
+### 1. Clone & Fetch Dependencies
+Clone the repository, navigate into the directory, and download dependencies:
+
 ```bash
 git clone https://github.com/pratama1246/ticketly.git
 cd ticketly
-```
-
-### 2) Fetch Dependencies
-```bash
 flutter pub get
 ```
 
-### 3) Configure API Base URL
-The application dynamically detects the platform in [api_constants.dart](lib/constants/api_constants.dart):
+### 2. Configure API Base URL
+To connect the Flutter application with the CodeIgniter 4 backend, check the configuration in [api_constants.dart](file:///home/pputra/Documents/Project-Web/ticketly/lib/constants/api_constants.dart).
+
+The application dynamically detects the running platform so you do not have to manually edit the host IP address:
+
 ```dart
+// lib/constants/api_constants.dart
 static String get baseUrl {
-  if (kIsWeb) return 'http://localhost:8080';
-  if (Platform.isAndroid) return 'http://10.0.2.2:8080';
-  return 'http://localhost:8080';
+  if (kIsWeb) {
+    return 'http://localhost:8080';
+  }
+  if (Platform.isAndroid) {
+    // 10.0.2.2 is a special loopback address to reach localhost on the host machine from the Android emulator
+    return 'http://10.0.2.2:8080'; 
+  }
+  return 'http://localhost:8080'; // iOS Emulator / Mac
 }
 ```
+
+*Ensure your CI4 backend is running on port `8080` (default for `php spark serve`). If you use a custom port or live production URL, adjust this file accordingly.*
 
 ---
 
-## REST API Endpoints
+## API Integration & Documentation (Scalar)
 
-All API endpoints consumed by the Flutter app are prefixed with `/api`. Endpoints protected by the `api_jwt` filter require a valid JWT Bearer token in the `Authorization: Bearer <token>` header.
+The mobile client consumes REST API endpoints from the **Ticketly Backend (CodeIgniter 4)**. To run this project fully, you need the backend server running.
 
-### Response Format
+* **Backend CI4 Repository:** [ticketly-project](https://github.com/pratama1246/ticketly-project)
+* **Interactive API Docs (Scalar):** When the CI4 backend is running locally, you can view interactive API documentation, request/response schemas, try out endpoints, and generate client integration code (e.g. Dart/curl):
+  👉 **[http://localhost:8080/api/docs](http://localhost:8080/api/docs)**
 
-Returned responses have a consistent JSON structure:
-
-```json
-{
-  "status": "success" | "error",
-  "message": "Response message description.",
-  "data": { ... } | [ ... ] | null
-}
-```
-
-For paginated list data, the response includes a sidecar `meta` object:
-
-```json
-{
-  "status": "success",
-  "message": "...",
-  "data": [],
-  "meta": {
-    "total": 42,
-    "per_page": 10,
-    "current_page": 1,
-    "last_page": 5
-  }
-}
-```
-
-### Endpoint List
+### API Endpoints Consumed:
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -158,9 +146,9 @@ For paginated list data, the response includes a sidecar `meta` object:
 | `POST` | `/api/auth/register` | Public | Register a new account |
 | `POST` | `/api/auth/login` | Public | Login & receive custom JWT token |
 | `POST` | `/api/auth/logout` | JWT | Logout & terminate authentication session |
-| `POST` | `/api/auth/forgot-password` | Public | Request password reset verification code (OTP) |
-| `POST` | `/api/auth/verify-code` | Public | Validate OTP verification code |
-| `POST` | `/api/auth/reset-password` | Public | Update user password with new credentials |
+| `POST` | `/api/auth/forgot-password` | Public | Request an OTP reset code via email |
+| `POST` | `/api/auth/verify-code` | Public | Verify the 6-digit security OTP code |
+| `POST` | `/api/auth/reset-password` | Public | Set new password using verified OTP code |
 | **Events & Tickets** | | | |
 | `GET` | `/api/events` | Public | Get paginated list of events |
 | `GET` | `/api/events/featured` | Public | Get featured events list |
@@ -179,17 +167,19 @@ For paginated list data, the response includes a sidecar `meta` object:
 | `GET` | `/api/orders` | JWT | User order history |
 | `GET` | `/api/orders/{id}` | JWT | Specific order transaction details |
 
+> 🔒 **JWT Auth**: Endpoints marked with **JWT** require an `Authorization: Bearer <token>` header containing the saved JWT token.
+
 ---
 
-## Run the App
+## How to Run
 
-Launch the application on a connected device or emulator:
+Run the following command in your terminal to launch the application on a connected device or emulator:
 
 ```bash
 # Check connected devices
 flutter devices
 
-# Run the app
+# Run the app (select target device if multiple are connected)
 flutter run
 ```
 
@@ -197,7 +187,10 @@ flutter run
 
 ## 🎨 UI/UX Design
 
-The interface was designed in Figma before development, following a design-first workflow. The prototype covers user flows for browsing events, ticket purchasing, and account management.
+Ticketly follows a design-first workflow using Figma with the following style guide:
+- **Primary Colors**: Cream/Soft Yellow (`0xFFFFFDE7`) for a clean and modern canvas, paired with **Blue Primary** (`0xFF072AC8`) for main interaction elements.
+- **Typography**: Uses the **Poppins** typeface with varying font weights (Medium, Semi-Bold, Bold) to create a clear informational hierarchy.
+- **Interactions**: Smooth screen transitions and micro-animations on interactive elements to improve navigation comfort.
 
 ---
 
@@ -207,7 +200,7 @@ The interface was designed in Figma before development, following a design-first
 - **Tama**
 - **Jihan**
 
-Built as a college project at **Politeknik Negeri Cilacap**, Informatics Engineering Department.
+This project was built as a college project at **Politeknik Negeri Cilacap**, Informatics Engineering Department.
 
 **Class:** Teknik Informatika 2D  
 **Course:** Pemrograman Web 2 (Mobile Integration)  
