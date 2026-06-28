@@ -205,3 +205,13 @@ This project was built as a college project at **Politeknik Negeri Cilacap**, In
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## ⚠️ Disclaimer
+
+All event logos, promoter names, and concert posters featured in the screenshots and seed database of this project belong to their respective copyright owners (official promoters/events). They are used purely for educational and academic demonstration purposes to simulate a realistic ticketing catalog.
+
+---
+
+[![GitHub](https://img.shields.io/badge/GitHub-pratama1246-black?logo=github)](https://github.com/pratama1246)
