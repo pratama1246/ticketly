@@ -137,21 +137,29 @@ The mobile client consumes REST API endpoints from the **Ticketly Backend (CodeI
 
 ### API Endpoints Consumed:
 
-| Method | Endpoint | Description | Auth |
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/auth/register` | Register a new user | Public |
-| `POST` | `/api/auth/login` | Login and receive custom JWT token | Public |
-| `POST` | `/api/auth/logout` | Terminate session and invalidate token | JWT |
-| `GET` | `/api/events` | Get paginated list of events | Public |
-| `GET` | `/api/events/featured` | Get featured events list for Hero Banner | Public |
-| `GET` | `/api/events/landing` | Get grouped events list for landing homepage | Public |
-| `GET` | `/api/events/{slug}` | Detailed event and ticket categories | Public |
-| `POST` | `/api/checkout/start` | Start checkout process and lock ticket quota | JWT |
-| `POST` | `/api/checkout/confirm` | Confirm booking by uploading proof of payment | JWT |
-| `POST` | `/api/checkout/cancel` | Cancel an active booking transaction | JWT |
-| `GET` | `/api/profile` | Get logged-in user profile details | JWT |
-| `POST` | `/api/profile/update` | Update user details and profile photo | JWT |
-| `GET` | `/api/orders` | User order history and status | JWT |
+| **Auth** | | | |
+| `POST` | `/api/auth/register` | Public | Register a new account |
+| `POST` | `/api/auth/login` | Public | Login & receive custom JWT token |
+| `POST` | `/api/auth/logout` | JWT | Logout & terminate authentication session |
+| **Events & Tickets** | | | |
+| `GET` | `/api/events` | Public | Get paginated list of events |
+| `GET` | `/api/events/featured` | Public | Get featured events list |
+| `GET` | `/api/events/landing` | Public | Get events list for the main/landing page |
+| `GET` | `/api/events/{slug}` | Public | Event details by slug |
+| `GET` | `/api/events/{id}/tickets` | Public | List of ticket categories & quotas per event |
+| **Checkout** | | | |
+| `GET` | `/api/checkout/payment-methods` | Public | List of available payment methods |
+| `POST` | `/api/checkout/calculate` | Public | Calculate cart, subtotal, admin fee, & total |
+| `POST` | `/api/checkout/start` | JWT | Start checkout & lock remaining ticket quota |
+| `POST` | `/api/checkout/confirm` | JWT | Upload proof of payment / confirm transaction |
+| `POST` | `/api/checkout/cancel` | JWT | Cancel booking transaction |
+| **Profile & Orders** | | | |
+| `GET` | `/api/profile` | JWT | Get current user's profile details |
+| `POST` | `/api/profile/update` | JWT | Update current user's profile details |
+| `GET` | `/api/orders` | JWT | User order history |
+| `GET` | `/api/orders/{id}` | JWT | Specific order transaction details |
 
 > 🔒 **JWT Auth**: Endpoints marked with **JWT** require an `Authorization: Bearer <token>` header containing the saved JWT token.
 
