@@ -78,20 +78,55 @@ Before running the Ticketly Mobile app, ensure that you meet the following requi
 
 ## Folder Structure
 
-This application is built using a clean, modular structure for easy code maintenance:
+This application is built using a clean, modular structure for easy code maintenance. Here is the layout of the project, highlighting key files and directories:
 
 ```text
-lib/
-  ├── constants/    # App constants (API endpoints, asset paths)
-  ├── data/         # Mock data & internal application data
-  ├── extensions/   # Flutter & Dart extensions and helpers
-  ├── models/       # Data models mapped from JSON API responses
-  ├── providers/    # State management helpers (if applicable)
-  ├── screens/      # Main UI screens (Splash, Onboarding, Home, Checkout, etc.)
-  ├── service/      # Service layer for API & Auth logic (ApiService & AuthService)
-  ├── theme/        # App styling, color palettes, fonts, and borders (AppTheme)
-  ├── utils/        # Utility functions (date formatting, currency formatting, etc.)
-  └── widgets/      # Reusable UI components (Custom Buttons, EventCards, HeroBanner)
+ticketly/
+├── assets/                     # Media and graphics resources
+│   ├── icons/                  # SVG icons (e.g., google.svg)
+│   └── images/                 # App logos, onboarding screens, and password recovery graphics
+├── lib/                        # Core application source code
+│   ├── constants/              # Global app configuration & API paths
+│   │   └── api_constants.dart  # Automatic backend URL detector (Localhost, Emulator, Web)
+│   ├── data/                   # Client-side static & mock data
+│   │   └── home_dummy_data.dart# Placeholder UI data for landing components
+│   ├── extensions/             # (Placeholder) Extension methods on Dart/Flutter types
+│   ├── models/                 # Data transfer object models mapped from JSON API responses
+│   │   ├── event_detail_model.dart
+│   │   ├── event_model.dart
+│   │   └── order_detail_model.dart
+│   ├── providers/              # (Placeholder) State management files (e.g., ChangeNotifiers)
+│   ├── screens/                # UI screens and navigation pages
+│   │   ├── splash_screen.dart           # App launch splash
+│   │   ├── onboarding_screen.dart       # First-time introductory screens
+│   │   ├── login_screen.dart            # Customer authentication forms
+│   │   ├── register_screen.dart
+│   │   ├── forgot_password_screen.dart  # OTP reset & password recovery flow
+│   │   ├── verification_screen.dart
+│   │   ├── new_password_screen.dart
+│   │   ├── home_page.dart               # Homepage feed showing featured events
+│   │   ├── event_list_screen.dart       # Filtered event view
+│   │   ├── event_detail_screen.dart     # Event seats, quota, description
+│   │   ├── checkout_screen.dart         # Ticket purchase calculation & payment upload
+│   │   ├── my_tickets_screen.dart       # Active and past order history list
+│   │   ├── ticket_detail_screen.dart    # Individual e-ticket details & barcode mockup
+│   │   ├── account_screen.dart          # User profile info & settings
+│   │   └── edit_profile_screen.dart     # Profile customization forms
+│   ├── service/                # Business logic integration & HTTP services
+│   │   ├── api_service.dart    # Event, checkout, & ticket data fetching
+│   │   └── auth_service.dart   # JWT generation, registration, & OTP recovery
+│   ├── theme/                  # Global styling, themes, colors, and font styles
+│   │   └── app_theme.dart      # Custom Poppins font, palette, and widget themes
+│   ├── utils/                  # (Placeholder) Global utility methods (date, currency formatting)
+│   ├── widgets/                # Reusable UI widgets and layout modules
+│   │   ├── bottom_nav_bar.dart # Main app navigation bar
+│   │   ├── event_card.dart     # Horizontal and vertical event catalog tiles
+│   │   ├── faq_section.dart    # Expandable FAQ accordion
+│   │   ├── hero_banner.dart    # Carousel of featured events
+│   │   └── search_bar_widget.dart
+│   └── main.dart               # App entrypoint (initializes route paths & core theme)
+├── pubspec.yaml                # Flutter project package dependencies & assets mapping
+└── README.md                   # Project documentation (this file)
 ```
 
 ---
