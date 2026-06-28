@@ -179,7 +179,7 @@ flutter run
 
 ---
 
-## UI/UX Design
+## 🎨 UI/UX Design
 
 Ticketly follows a design-first workflow using Figma with the following style guide:
 - **Primary Colors**: Cream/Soft Yellow (`0xFFFFFDE7`) for a clean and modern canvas, paired with **Blue Primary** (`0xFF072AC8`) for main interaction elements.
@@ -188,7 +188,7 @@ Ticketly follows a design-first workflow using Figma with the following style gu
 
 ---
 
-## Team
+## 👥 Team
 
 - **Hana**
 - **Tama**
