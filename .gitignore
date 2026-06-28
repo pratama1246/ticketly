@@ -48,6 +48,7 @@ app.*.map.json
 .cursorrules
 AGENTS.md
 AI_RULES.md
+DESIGN.md
 
 # Auto-generated Flutter plugin registrant files
 **/generated_plugin_registrant.cc
