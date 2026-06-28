@@ -477,8 +477,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             foregroundColor: AppColors.textPrimary,
                             side: const BorderSide(color: AppColors.borderDefault, width: 1.5),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
                           ),
-                          child: const Text('Coba Lagi'),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Coba Lagi',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -494,8 +504,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.bluePrimary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
                           ),
-                          child: const Text('Ya, Sudah Bayar'),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Ya, Sudah Bayar',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),

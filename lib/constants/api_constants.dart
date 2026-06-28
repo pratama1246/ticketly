@@ -16,7 +16,8 @@ class ApiConstants {
       return 'http://localhost:8080';
     }
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8080';
+      // Menggunakan adb reverse tcp:8080 tcp:8080 untuk HP fisik via USB
+      return 'http://localhost:8080';
     }
     return 'http://localhost:8080';
   }

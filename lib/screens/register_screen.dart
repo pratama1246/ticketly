@@ -4,47 +4,51 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/app_theme.dart';
 import '../service/auth_service.dart';
-import 'home_page.dart';
-import 'register_screen.dart';
-import 'forgot_password_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
-    final result = await AuthService.login(email, password);
+    final result = await AuthService.register(
+      username: username,
+      email: email,
+      password: password,
+      passwordConfirm: confirmPassword,
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Login berhasil!'),
+            content: Text(result['message'] ?? 'Pendaftaran berhasil! Silakan masuk.'),
             backgroundColor: AppColors.success,
           ),
         );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        Navigator.pop(context); // Go back to login screen
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -59,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -87,7 +93,10 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -102,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Title
                 Center(
                   child: Text(
-                    'Masuk',
+                    'Daftar',
                     style: GoogleFonts.poppins(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
@@ -115,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Subtitle
                 Center(
                   child: Text(
-                    'Silakan masuk untuk mengelola profil dan pesanan Anda.',
+                    'Silakan daftar untuk memesan tiket event seru.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyStyle.copyWith(
                       color: AppColors.textSecondary,
@@ -162,6 +171,44 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
 
+                // Username Label
+                Row(
+                  children: [
+                    Text(
+                      'Nama Pengguna',
+                      style: AppTextStyles.labelStyle.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const Text(' *', style: TextStyle(color: AppColors.error)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Username Field
+                TextFormField(
+                  controller: _usernameController,
+                  keyboardType: TextInputType.name,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nama pengguna tidak boleh kosong';
+                    }
+                    if (value.trim().length < 3) {
+                      return 'Nama pengguna minimal 3 karakter';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
+                    hintText: 'username',
+                  ),
+                  style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textPrimary),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(100),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
                 // Password Label
                 Row(
                   children: [
@@ -185,8 +232,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Kata sandi tidak boleh kosong';
                     }
-                    if (value.length < 6) {
-                      return 'Kata sandi minimal 6 karakter';
+                    if (value.length < 8) {
+                      return 'Kata sandi minimal 8 karakter';
                     }
                     return null;
                   },
@@ -207,36 +254,61 @@ class _LoginScreenState extends State<LoginScreen> {
                     LengthLimitingTextInputFormatter(128),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
 
-                // Align Right: Lupa Kata Sandi Link
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
-                      );
-                    },
-                    child: Text(
-                      'Lupa Kata Sandi?',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
+                // Confirm Password Label
+                Row(
+                  children: [
+                    Text(
+                      'Konfirmasi Kata Sandi',
+                      style: AppTextStyles.labelStyle.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.bluePrimary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
+                    const Text(' *', style: TextStyle(color: AppColors.error)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                
+                // Confirm Password Field
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Konfirmasi kata sandi tidak boleh kosong';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Konfirmasi kata sandi tidak cocok';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    hintText: '••••••••',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: AppColors.textHint,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                      },
+                    ),
                   ),
+                  style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textPrimary),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(128),
+                  ],
                 ),
                 const SizedBox(height: 32),
 
-                // Login Button (Pill shape, full width, AppColors.bluePrimary)
+                // Register Button (Pill shape, full width, AppColors.bluePrimary)
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleLogin,
+                    onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.bluePrimary,
                       shape: RoundedRectangleBorder(
@@ -253,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           )
                         : Text(
-                            'Masuk',
+                            'Daftar',
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -264,14 +336,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Divider "Masuk dengan"
+                // Divider "Daftar dengan"
                 Row(
                   children: [
                     const Expanded(child: Divider(color: AppColors.borderDefault, thickness: 1)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text(
-                        'Masuk dengan',
+                        'Daftar dengan',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -292,7 +364,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 28),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Login dengan Facebook hanya hiasan')),
+                          const SnackBar(content: Text('Pendaftaran dengan Facebook hanya hiasan')),
                         );
                       },
                     ),
@@ -305,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Login dengan Google hanya hiasan')),
+                          const SnackBar(content: Text('Pendaftaran dengan Google hanya hiasan')),
                         );
                       },
                     ),
@@ -314,7 +386,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Icon(Icons.apple, color: Colors.black, size: 28),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Login dengan Apple hanya hiasan')),
+                          const SnackBar(content: Text('Pendaftaran dengan Apple hanya hiasan')),
                         );
                       },
                     ),
@@ -322,22 +394,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Register Link (Goes to RegisterScreen)
+                // Back to Login Link
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                      );
+                      Navigator.pop(context);
                     },
                     child: RichText(
                       text: TextSpan(
                         style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondary),
                         children: const [
-                          TextSpan(text: 'Belum memiliki Akun? '),
+                          TextSpan(text: 'Sudah memiliki Akun? '),
                           TextSpan(
-                            text: 'Daftar',
+                            text: 'Masuk',
                             style: TextStyle(
                               color: AppColors.bluePrimary,
                               fontWeight: FontWeight.w600,

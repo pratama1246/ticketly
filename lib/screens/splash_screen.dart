@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
+import '../service/auth_service.dart';
 import 'onboarding_screen.dart';
+import 'home_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -51,12 +53,17 @@ class _SplashScreenState extends State<SplashScreen>
 
     _ctrl.forward();
 
-    // Setelah 2.6 detik total → pindah ke OnboardingScreen
-    Future.delayed(const Duration(milliseconds: 2600), () {
+    // Setelah 2.6 detik total → cek status login, lalu arahkan ke halaman yang sesuai
+    Future.delayed(const Duration(milliseconds: 2600), () async {
       if (!mounted) return;
+      final loggedIn = await AuthService.isLoggedIn();
+      if (!mounted) return;
+
+      final destination = loggedIn ? const HomePage() : const OnboardingScreen();
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const OnboardingScreen(),
+          pageBuilder: (_, __, ___) => destination,
           transitionsBuilder: (_, anim, __, child) =>
               FadeTransition(opacity: anim, child: child),
           transitionDuration: const Duration(milliseconds: 500),

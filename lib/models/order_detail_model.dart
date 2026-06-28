@@ -1,4 +1,5 @@
 import 'event_model.dart';
+import '../service/api_service.dart';
 
 int _parseInt(dynamic value) {
   if (value == null) return 0;
@@ -82,6 +83,7 @@ class OrderItemModel {
   final String eventTime;
   final String seatLabel;
   final int pricePerTicket;
+  final String? eventPoster;
 
   const OrderItemModel({
     required this.id,
@@ -93,6 +95,7 @@ class OrderItemModel {
     required this.eventTime,
     required this.seatLabel,
     required this.pricePerTicket,
+    this.eventPoster,
   });
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -103,6 +106,7 @@ class OrderItemModel {
     final eventName = json['event_name'] ?? '';
     final pricePerTicket = _parseInt(json['price_per_ticket']);
     final seatLabel = json['seat_label'] ?? 'Free Seating';
+    final eventPoster = ApiService.normalizeImageUrl(json['event_poster']);
 
     // Parse event date and time
     String dateStr = '';
@@ -128,6 +132,7 @@ class OrderItemModel {
       eventTime: timeStr,
       seatLabel: seatLabel,
       pricePerTicket: pricePerTicket,
+      eventPoster: eventPoster,
     );
   }
 }

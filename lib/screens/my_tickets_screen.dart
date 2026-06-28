@@ -146,70 +146,84 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          if (!_isLoading)
-            IconButton(
-              icon: const Icon(Icons.refresh, color: AppColors.bluePrimary),
-              onPressed: _checkAuthAndLoadTickets,
-            ),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.bluePrimary))
-          : (_errorMessage != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                        const SizedBox(height: 12),
-                        Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textPrimary),
+      body: RefreshIndicator(
+        onRefresh: _checkAuthAndLoadTickets,
+        color: AppColors.bluePrimary,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.bluePrimary))
+            : (_errorMessage != null
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.7,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textPrimary),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: _checkAuthAndLoadTickets,
+                                  child: const Text('Coba Lagi'),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _checkAuthAndLoadTickets,
-                          child: const Text('Coba Lagi'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : (ticketsToRender.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      ),
+                    ],
+                  )
+                : (ticketsToRender.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         children: [
-                          const Icon(
-                            Icons.confirmation_number_outlined,
-                            size: 64,
-                            color: AppColors.textHint,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Belum ada tiket',
-                            style: AppTextStyles.pageTitleStyle,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tiket yang kamu beli akan muncul di sini',
-                            style: AppTextStyles.bodyStyle,
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.7,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.confirmation_number_outlined,
+                                    size: 64,
+                                    color: AppColors.textHint,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Belum ada tiket',
+                                    style: AppTextStyles.pageTitleStyle,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Tiket yang kamu beli akan muncul di sini',
+                                    style: AppTextStyles.bodyStyle,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      itemCount: ticketsToRender.length,
-                      itemBuilder: (context, index) {
-                        final item = ticketsToRender[index];
-                        return _buildTicketCard(context, item);
-                      },
-                    ))),
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        itemCount: ticketsToRender.length,
+                        itemBuilder: (context, index) {
+                          final item = ticketsToRender[index];
+                          return _buildTicketCard(context, item);
+                        },
+                      ))),
+      ),
       bottomNavigationBar: TicketlyBottomNavBar(
         currentIndex: 1,
         onTap: (index) {
@@ -238,11 +252,6 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   }
 
   Widget _buildTicketCard(BuildContext context, _TicketListItem item) {
-    // Determine dynamic poster fallback / mapping based on event title
-    final String posterUrl = item.ticket.eventName.contains('RIIZE')
-        ? '${ApiConstants.baseUrl}/uploads/banners/riizing-loud.png'
-        : '${ApiConstants.baseUrl}/uploads/banners/tds-4.jpg';
-
     // Normalize address mapping
     final String venue = item.ticket.eventName.contains('RIIZE')
         ? 'ICE BSD Hall 5-6'
@@ -266,21 +275,36 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Event Poster thumbnail
+                    // Event Poster thumbnail (Loads webp from API if present, otherwise shows a clean placeholder)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        posterUrl,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 100,
-                          height: 100,
-                          color: AppColors.bluePrimaryLight,
-                          child: const Icon(Icons.music_note, color: AppColors.bluePrimary),
-                        ),
-                      ),
+                      child: item.ticket.eventPoster != null && item.ticket.eventPoster!.isNotEmpty
+                          ? Image.network(
+                              item.ticket.eventPoster!,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 100,
+                                height: 100,
+                                color: const Color(0xFFF3F4F6),
+                                child: const Icon(
+                                  Icons.music_note_outlined,
+                                  size: 32,
+                                  color: AppColors.textHint,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              width: 100,
+                              height: 100,
+                              color: const Color(0xFFF3F4F6),
+                              child: const Icon(
+                                Icons.music_note_outlined,
+                                size: 32,
+                                color: AppColors.textHint,
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 16),
                     

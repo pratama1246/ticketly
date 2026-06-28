@@ -602,26 +602,21 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           color: AppColors.textSecondary,
                         ),
                       ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          'Total Estimasi  ',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        Text(
-                          _formatCurrency(subtotal),
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: totalQty > 0 ? AppColors.bluePrimary : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Total Estimasi',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      _formatCurrency(subtotal),
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: totalQty > 0 ? AppColors.bluePrimary : AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
