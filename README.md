@@ -11,7 +11,6 @@ It connects to the **CodeIgniter 4 (PHP 8.1+) Backend RESTful API** to deliver a
 [![Flutter](https://img.shields.io/badge/Flutter-3.11+-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![CodeIgniter](https://img.shields.io/badge/API_Integration-CodeIgniter_4-EE4326?style=for-the-badge&logo=codeigniter&logoColor=white)](https://codeigniter.com)
-[![Google Fonts](https://img.shields.io/badge/Font-Poppins-FF5722?style=for-the-badge&logo=googlefonts&logoColor=white)](https://fonts.google.com/specimen/Poppins)
 
 ---
 
@@ -222,10 +221,6 @@ Ticketly follows a design-first workflow using Figma with the following style gu
 - **Jihan**
 
 This project was built as a college project at **Politeknik Negeri Cilacap**, Informatics Engineering Department.
-
-**Class:** Teknik Informatika 2D  
-**Course:** Pemrograman Web 2 (Mobile Integration)  
-**Institution:** Politeknik Negeri Cilacap  
 
 ---
 
