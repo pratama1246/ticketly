@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../models/event_detail_model.dart';
+import '../service/api_service.dart';
 import '../service/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'my_tickets_screen.dart';
@@ -228,7 +230,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           groupedData.forEach((type, list) {
             if (list is List) {
               for (final m in list) {
-                flattened.add(Map<String, dynamic>.from(m));
+                final method = Map<String, dynamic>.from(m);
+                if (method['logo_image'] != null) {
+                  method['logo_image'] = ApiService.normalizeImageUrl(method['logo_image']);
+                }
+                flattened.add(method);
               }
             }
           });
@@ -1610,17 +1616,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.grey[100],
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.grey[200]!, width: 0.8),
           ),
-          child: logo != null && logo.isNotEmpty && !logo.endsWith('.svg')
-              ? Image.network(
-                  logo,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildPaymentLogoFallback(code, name),
-                )
+          child: logo != null && logo.isNotEmpty
+              ? (logo.endsWith('.svg')
+                  ? SvgPicture.network(
+                      logo,
+                      fit: BoxFit.contain,
+                      placeholderBuilder: (context) => const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 1.5),
+                      ),
+                    )
+                  : Image.network(
+                      logo,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildPaymentLogoFallback(code, name),
+                    ))
               : _buildPaymentLogoFallback(code, name),
         ),
         title: Text(
@@ -2271,17 +2286,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 height: 28,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[100],
+                                  color: Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.grey[200]!, width: 0.8),
                                 ),
-                                child: _selectedMethodLogo != null && _selectedMethodLogo!.isNotEmpty && !_selectedMethodLogo!.endsWith('.svg')
-                                    ? Image.network(
-                                        _selectedMethodLogo!,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            _buildPaymentLogoFallback(_selectedMethodCode ?? '', _selectedMethodName ?? ''),
-                                      )
+                                child: _selectedMethodLogo != null && _selectedMethodLogo!.isNotEmpty
+                                    ? (_selectedMethodLogo!.endsWith('.svg')
+                                        ? SvgPicture.network(
+                                            _selectedMethodLogo!,
+                                            fit: BoxFit.contain,
+                                            placeholderBuilder: (context) => const SizedBox(
+                                              width: 14,
+                                              height: 14,
+                                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                                            ),
+                                          )
+                                        : Image.network(
+                                            _selectedMethodLogo!,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                _buildPaymentLogoFallback(_selectedMethodCode ?? '', _selectedMethodName ?? ''),
+                                          ))
                                     : _buildPaymentLogoFallback(_selectedMethodCode ?? '', _selectedMethodName ?? ''),
                               ),
                             ],
@@ -2481,7 +2505,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ],
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),

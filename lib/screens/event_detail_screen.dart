@@ -21,7 +21,7 @@ String _formatCurrency(int number) {
     formatted = chars[i] + formatted;
     count++;
     if (count % 3 == 0 && i > 0) {
-      formatted = '.' + formatted;
+      formatted = '.$formatted';
     }
   }
   return 'Rp $formatted';

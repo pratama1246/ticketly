@@ -96,34 +96,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                     child: Column(
                       children: [
-                        // White circle badge containing the tilted logo "Tick"
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Transform.rotate(
-                            angle: -0.15, // Approx -8.6 degrees tilt
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.bluePrimary,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Tick',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.accentYellow,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ),
-                          ),
+                        // Official App Logo
+                        Image.asset(
+                          'assets/images/logo_tick_square.png',
+                          width: 90,
                         ),
                         const SizedBox(height: 12),
                         Text(

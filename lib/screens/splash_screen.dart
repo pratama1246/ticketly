@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../theme/app_theme.dart';
 import '../service/auth_service.dart';
 import 'onboarding_screen.dart';
 import 'home_page.dart';
@@ -63,8 +61,8 @@ class _SplashScreenState extends State<SplashScreen>
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => destination,
-          transitionsBuilder: (_, anim, __, child) =>
+          pageBuilder: (_, _, _) => destination,
+          transitionsBuilder: (_, anim, _, child) =>
               FadeTransition(opacity: anim, child: child),
           transitionDuration: const Duration(milliseconds: 500),
         ),

@@ -176,7 +176,7 @@ class _OnboardingPage extends StatelessWidget {
             data.imagePath,
             fit: BoxFit.cover,
             alignment: Alignment.topCenter,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
